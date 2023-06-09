@@ -1,0 +1,8 @@
+{
+    "cid": "1627844727936000",
+    "alias": "la-tech-week",
+    "pid": "DE_1627844727936001",
+    "platform": "",
+    "socket": "",
+    "containerPrefix": ""
+}
