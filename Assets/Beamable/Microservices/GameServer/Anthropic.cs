@@ -15,18 +15,20 @@ namespace Anthropic
         private readonly HttpClient _httpClient;
         private readonly IMicroserviceNotificationsApi _notifications;
         private readonly Config _config;
+        private readonly PromptService _promptService;
 
         private readonly JsonSerializerSettings _newtonSoftJsonSettings = new JsonSerializerSettings
         {
             NullValueHandling = NullValueHandling.Ignore
         };
 
-        public Claude(RequestContext ctx, HttpClient httpClient, IMicroserviceNotificationsApi notifications, Config config)
+        public Claude(RequestContext ctx, HttpClient httpClient, IMicroserviceNotificationsApi notifications, Config config, PromptService promptService)
         {
             _ctx = ctx;
             _httpClient = httpClient;
             _notifications = notifications;
             _config = config;
+            _promptService = promptService;
         }
 
         public async Task<ClaudeCompletionResponse> Send(string prompt, string model, int maxTokensToSample = 100000)

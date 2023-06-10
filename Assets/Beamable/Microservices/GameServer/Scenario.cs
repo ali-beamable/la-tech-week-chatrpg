@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,6 +48,29 @@ public class Scenario
         var responseJson = await response.Content.ReadAsStringAsync();
         var completionResponse = JsonConvert.DeserializeObject<InferenceResponse>(responseJson);
         return completionResponse;
+    }
+
+    public async Task<InferenceResponse> PollInferenceToCompletion(string model, string inferenceId)
+    {
+        int pollCount = 0;
+        bool completed = false;
+        InferenceResponse updatedInference = null;
+        while (!completed)
+        {
+            // Wait 1 second before polling again
+            await Task.Delay(1000);
+
+            updatedInference = await GetInference(model, inferenceId);
+            completed = updatedInference.inference.IsCompleted;
+            pollCount += 1;
+
+            if (pollCount >= 300 && !completed)
+            {
+                throw new Exception("Polling timed out after 10 attempts.");
+            }
+        }
+
+        return updatedInference;
     }
 
     public class CreateInferenceRequest

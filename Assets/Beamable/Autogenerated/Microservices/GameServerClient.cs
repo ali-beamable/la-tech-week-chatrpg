@@ -47,12 +47,12 @@ namespace Beamable.Server.Clients
         /// Call the TestScenario method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.TestScenario"/>
         /// </summary>
-        public Beamable.Common.Promise<Beamable.Common.Unit> TestScenario(string prompt)
+        public Beamable.Common.Promise<string> TestScenario(string prompt)
         {
             string serialized_prompt = this.SerializeArgument<string>(prompt);
             string[] serializedFields = new string[] {
                     serialized_prompt};
-            return this.Request<Beamable.Common.Unit>("GameServer", "scenario", serializedFields);
+            return this.Request<string>("GameServer", "scenario", serializedFields);
         }
         
         /// <summary>

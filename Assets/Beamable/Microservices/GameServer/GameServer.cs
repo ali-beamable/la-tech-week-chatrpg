@@ -1,7 +1,9 @@
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Anthropic;
 using Beamable.Server;
+using UnityEngine;
 
 namespace Beamable.Microservices
 {
@@ -11,10 +13,14 @@ namespace Beamable.Microservices
 		[ConfigureServices]
 		public static void Configure(IServiceBuilder builder)
 		{
+			// Singleton
 			builder.Builder.AddSingleton<Config>();
-			builder.Builder.AddScoped<Claude>();
 			builder.Builder.AddSingleton<Scenario>();
 			builder.Builder.AddSingleton(p => new HttpClient());
+			
+			// Scoped
+			builder.Builder.AddScoped<Claude>();
+			builder.Builder.AddScoped<PromptService>();
 		}
 		
 		[InitializeServices]
@@ -40,9 +46,22 @@ namespace Beamable.Microservices
 		}
 
 		[ClientCallable("scenario")]
-		public void TestScenario(string prompt)
+		public async Task<string> TestScenario(string prompt)
 		{
 			// This code executes on the server.
+			var model = "RNHPqrHFQYu-oqZGb5VBtg";
+			var scenario = Provider.GetService<Scenario>();
+
+			var inferenceRsp = await scenario.CreateInference(model, "dungeons & dragons, level 1, wizard");
+			if (!inferenceRsp.inference.IsCompleted)
+			{
+				inferenceRsp =
+					await scenario.PollInferenceToCompletion(inferenceRsp.inference.modelId, inferenceRsp.inference.id);
+			}
+
+			var url = inferenceRsp.inference.images.FirstOrDefault().url;
+
+			return url;
 		}
 
 		[ClientCallable("blockade")]
