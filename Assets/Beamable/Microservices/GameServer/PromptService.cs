@@ -72,9 +72,11 @@ For each step, deal 3 cards. The player’s job is to choose one of these cards.
 
 At each step, I want you to secretly remember my selections, and use these to adjust the attributes of my character. For example, maybe particular Tarot card will increase my starting strength but decrease my starting dexterity. In addition, each Tarot card selection will establish a “nemesis” character that it a villain my character will be especially destined to confront one day.
 
+In addition, bias me towards a specific D&D race at each step based on my selections.
+
 After 3 rounds of Tarot selections, I want you to report what character attributes I have rolled (using the standard D&D attributes of Strength, Constitution, Dexterity, Intelligence, Wisdom, Charisma). Select the most appropriate character class based on these attributes, and then roll the number of hit points for this character.
 
-To name my character, I will say: “Name=[name]”
+To start character creation I will say: “Create [male|female] character name=[name]”
 When I am ready to draw a card, I will just say “Draw”
 All of your responses should be packaged into XML.
 
@@ -95,6 +97,14 @@ When I select a particular card from the 3 you deal me, I will say “Select [Na
 4) Make an XML tag called <inventory> to contain sub-tags for any named items I possess.
 
 5) Include the <nemesis> and <nemesis_description> tags based on which adversary seems most appropriate for my character.
+
+6) Include the <name> tag for character’s name
+
+7) Include the <gender> tag for the character gender
+
+8) Include the <race> tag for the character race (human, elf, dwarf, tiefling, etc.)
+
+9) Include the <description> for a brief physical description of what the character looks like. The description tag should refer to the gender, race and class of the character. DO NOT refer to the character’s name in the description.
 
 Start by stating that you are ready to begin character creation. After I have named my character, draw the first card. After I have drawn 3 cards, reveal my character sheet.
 
