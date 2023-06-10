@@ -1,34 +1,42 @@
 {
-    "name": "Beamable.Microservice.GameServer",
-    "rootNamespace": "",
-    "references": [
-        "Unity.Beamable.Runtime.Common",
-        "Unity.Beamable.Server.Runtime",
-        "Unity.Beamable.Server.Runtime.Shared",
-        "Unity.Beamable",
-        "Beamable.SmallerJSON",
-        "Unity.Beamable.Server.Runtime.Common",
-        "Unity.Beamable.Server.Runtime.Mocks",
-        "Unity.Beamable.Customer.Common"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": true,
-    "precompiledReferences": [
-        "Unity.Plastic.Newtonsoft.Json.dll",
-        "MongoDB.Bson.dll",
-        "MongoDB.Driver.dll",
-        "MongoDB.Driver.Core.dll",
-        "MongoDB.Libmongocrypt.dll",
-        "DnsClient.dll",
-        "SharpCompress.dll",
-        "System.Runtime.CompilerServices.Unsafe.dll"
-    ],
-    "autoReferenced": false,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+   "name":"Beamable.Microservice.GameServer",
+  "rootNamespace":"",
+  "references":[
+     "Unity.Beamable.Runtime.Common",
+    "Unity.Beamable.Server.Runtime",
+    "Unity.Beamable.Server.Runtime.Shared",
+    "Unity.Beamable",
+    "Beamable.SmallerJSON",
+    "Unity.Beamable.Server.Runtime.Common",
+    "Unity.Beamable.Server.Runtime.Mocks",
+    "Unity.Beamable.Customer.Common",
+    "Beamable.Storage.GameDatabase"
+  ],
+  "includePlatforms":[
+     "Editor"
+  ],
+  "excludePlatforms":[
+     
+  ],
+  "allowUnsafeCode":false,
+  "overrideReferences":true,
+  "precompiledReferences":[
+     "Unity.Plastic.Newtonsoft.Json.dll",
+    "MongoDB.Bson.dll",
+    "MongoDB.Driver.dll",
+    "MongoDB.Driver.Core.dll",
+    "MongoDB.Libmongocrypt.dll",
+    "DnsClient.dll",
+    "SharpCompress.dll",
+    "System.Runtime.CompilerServices.Unsafe.dll",
+    "System.Buffers.dll"
+  ],
+  "autoReferenced":false,
+  "defineConstraints":[
+     
+  ],
+  "versionDefines":[
+     
+  ],
+  "noEngineReferences":false
 }

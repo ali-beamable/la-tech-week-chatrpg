@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Anthropic;
 using Beamable.Server;
+using BlockadeLabs;
 using UnityEngine;
 
 namespace Beamable.Microservices
@@ -16,6 +17,7 @@ namespace Beamable.Microservices
 			// Singleton
 			builder.Builder.AddSingleton<Config>();
 			builder.Builder.AddSingleton<Scenario>();
+			builder.Builder.AddSingleton<SkyboxApi>();
 			builder.Builder.AddSingleton(p => new HttpClient());
 			
 			// Scoped
@@ -55,19 +57,35 @@ namespace Beamable.Microservices
 			var inferenceRsp = await scenario.CreateInference(model, "dungeons & dragons, level 1, wizard");
 			if (!inferenceRsp.inference.IsCompleted)
 			{
+				Debug.Log("Polling for inference...");
 				inferenceRsp =
 					await scenario.PollInferenceToCompletion(inferenceRsp.inference.modelId, inferenceRsp.inference.id);
 			}
 
 			var url = inferenceRsp.inference.images.FirstOrDefault().url;
+			Debug.Log(url);
 
 			return url;
 		}
 
 		[ClientCallable("blockade")]
-		public void TestBlockade(string prompt)
+		public async Task<string> TestBlockade(string prompt)
 		{
 			// This code executes on the server.
+			var skyboxStyle = SkyboxStyles.FANTASY_LAND;
+			var blockade = Provider.GetService<SkyboxApi>();
+			
+			Debug.Log("Creating Skybox...");
+			var inferenceRsp = await blockade.CreateSkybox(skyboxStyle, prompt);
+			if (!inferenceRsp.IsCompleted)
+			{
+				Debug.Log("Polling skybox for completion...");
+				var rsp = await blockade.PollSkyboxToCompletion(inferenceRsp.Id.Value);
+				inferenceRsp = rsp.Request;
+			}
+
+			Debug.Log($"Skybox creation complete: {inferenceRsp.FileUrl}");
+			return inferenceRsp.FileUrl;
 		}
 	}
 }

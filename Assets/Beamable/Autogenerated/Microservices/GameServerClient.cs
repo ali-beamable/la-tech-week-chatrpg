@@ -59,12 +59,12 @@ namespace Beamable.Server.Clients
         /// Call the TestBlockade method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.TestBlockade"/>
         /// </summary>
-        public Beamable.Common.Promise<Beamable.Common.Unit> TestBlockade(string prompt)
+        public Beamable.Common.Promise<string> TestBlockade(string prompt)
         {
             string serialized_prompt = this.SerializeArgument<string>(prompt);
             string[] serializedFields = new string[] {
                     serialized_prompt};
-            return this.Request<Beamable.Common.Unit>("GameServer", "blockade", serializedFields);
+            return this.Request<string>("GameServer", "blockade", serializedFields);
         }
     }
     
