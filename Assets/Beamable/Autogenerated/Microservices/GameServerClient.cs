@@ -32,18 +32,49 @@ namespace Beamable.Server.Clients
         }
         
         /// <summary>
-        /// Call the ServerCall method on the GameServer microservice
-        /// <see cref="Beamable.Microservices.GameServer.ServerCall"/>
+        /// Call the TestClaude method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.TestClaude"/>
         /// </summary>
-        public Beamable.Common.Promise<Beamable.Common.Unit> ServerCall()
+        public Beamable.Common.Promise<string> TestClaude(string prompt)
         {
-            string[] serializedFields = new string[0];
-            return this.Request<Beamable.Common.Unit>("GameServer", "ServerCall", serializedFields);
+            string serialized_prompt = this.SerializeArgument<string>(prompt);
+            string[] serializedFields = new string[] {
+                    serialized_prompt};
+            return this.Request<string>("GameServer", "claude", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the TestScenario method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.TestScenario"/>
+        /// </summary>
+        public Beamable.Common.Promise<Beamable.Common.Unit> TestScenario(string prompt)
+        {
+            string serialized_prompt = this.SerializeArgument<string>(prompt);
+            string[] serializedFields = new string[] {
+                    serialized_prompt};
+            return this.Request<Beamable.Common.Unit>("GameServer", "scenario", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the TestBlockade method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.TestBlockade"/>
+        /// </summary>
+        public Beamable.Common.Promise<Beamable.Common.Unit> TestBlockade(string prompt)
+        {
+            string serialized_prompt = this.SerializeArgument<string>(prompt);
+            string[] serializedFields = new string[] {
+                    serialized_prompt};
+            return this.Request<Beamable.Common.Unit>("GameServer", "blockade", serializedFields);
         }
     }
     
     internal sealed class MicroserviceParametersGameServerClient
     {
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterSystem_String : MicroserviceClientDataWrapper<string>
+        {
+        }
     }
     
     [BeamContextSystemAttribute()]

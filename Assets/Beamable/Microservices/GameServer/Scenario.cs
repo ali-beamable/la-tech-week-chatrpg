@@ -1,0 +1,95 @@
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using Unity.Plastic.Newtonsoft.Json;
+
+public class Scenario
+{
+    private readonly string _url = "https://api.cloud.scenario.com/v1";
+    private readonly HttpClient _client;
+    private readonly Config _config;
+
+    public Scenario(HttpClient client, Config config)
+    {
+        _client = client;
+        _config = config;
+    }
+
+    public async Task<InferenceResponse> CreateInference(string model, string prompt)
+    {
+        var requestBody = new CreateInferenceRequest
+        {
+            parameters = new InferenceParameters
+            {
+                prompt = prompt
+            }
+        };
+        var requestPayload = JsonConvert.SerializeObject(requestBody);
+        var req = new HttpRequestMessage(HttpMethod.Post, $"{_url}/models/{model}/inferences");
+        req.Content = new StringContent(requestPayload, Encoding.UTF8, "application/json");
+        req.Headers.Add("Authorization", $"Basic {_config.ScenarioApiKey}");
+
+        var response = await _client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+        var responseJson = await response.Content.ReadAsStringAsync();
+        var completionResponse = JsonConvert.DeserializeObject<InferenceResponse>(responseJson);
+        
+        return completionResponse;
+    }
+
+    public async Task<InferenceResponse> GetInference(string model, string inferenceId)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Get, $"{_url}/models/{model}/inferences/{inferenceId}");
+        req.Headers.Add("Authorization", $"Basic {_config.ScenarioApiKey}");
+        
+        var response = await _client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+        var responseJson = await response.Content.ReadAsStringAsync();
+        var completionResponse = JsonConvert.DeserializeObject<InferenceResponse>(responseJson);
+        return completionResponse;
+    }
+
+    public class CreateInferenceRequest
+    {
+        public InferenceParameters parameters;
+    }
+
+    public class InferenceParameters
+    {
+        public string prompt;
+        public string type = "txt2img";
+        public double guidance = 7.0;
+        public int width = 512;
+        public int height = 512;
+        public int numInferenceSteps = 50;
+        public int numSamples = 1;
+        public bool enableSafetyCheck = false;
+    }
+
+    public class InferenceResponse
+    {
+        public Inference inference;
+    }
+
+    public class Inference
+    {
+        public string id;
+        public string userId;
+        public string authorId;
+        public string modelId;
+        public string createdAt;
+        public InferenceParameters parameters;
+        public string status;
+        public InferenceImage[] images;
+        public int imagesNumber;
+        public string displayPrompt;
+        public double progress;
+
+        public bool IsCompleted => status == "succeeded";
+        public bool InProgress => status == "in-progress";
+    }
+
+    public class InferenceImage
+    {
+        public string id;
+        public string url;
+    }
+}
