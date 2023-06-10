@@ -31,7 +31,7 @@ namespace Beamable.Microservices
 			var claude = Provider.GetService<Claude>();
 			var response = await claude.Send(new ClaudeCompletionRequest
 			{
-				Prompt = $"\n\nHuman: Generate a hello world C# script.\n\nAssistant:",
+				Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
 				Model = ClaudeModels.ClaudeV1_3_100k,
 				MaxTokensToSample = 100000
 			});
