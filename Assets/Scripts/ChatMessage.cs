@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,6 +8,16 @@ public class ChatMessage : MonoBehaviour
 {
     public Text messageAuthor;
     public Text messageBody;
+    public RectTransform myRectTransform;
+
+    void Update()
+    {
+        if (myRectTransform.sizeDelta.y != messageBody.rectTransform.sizeDelta.y + 10f)
+        {
+            myRectTransform.sizeDelta =
+                new Vector2(myRectTransform.sizeDelta.x, messageBody.rectTransform.sizeDelta.y + 10f);
+        }
+    }
 
     public void ResizeTextToFit()
     {

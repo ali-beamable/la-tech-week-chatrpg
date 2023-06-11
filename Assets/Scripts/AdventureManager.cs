@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Xml;
 using Beamable;
@@ -14,6 +12,7 @@ public class AdventureManager : MonoBehaviour
 {
     public CharacterWidget characterWidget;
     public GameObject chatMessagePrefab;
+    public GameObject narrativeMessagePrefab;
     public GameObject chatScrollView;
     public InputField chatInputField;
     
@@ -38,6 +37,8 @@ public class AdventureManager : MonoBehaviour
         _characterView = await BeamContext.Default.Microservices().GameServer().GetCharacter();
         
         characterWidget.SetCharacter(_characterView);
+
+        await PreamblePrompt();
         await LoadFromUrl(_characterView.skyboxUrl);
         //await UpdateSkybox("A dark and ominous forest on the edge of massive chasm. Shadows and gloom abound.");
     }
@@ -64,9 +65,18 @@ public class AdventureManager : MonoBehaviour
         var oldContext = claudeContext;
         var prompt = $"{_characterView.characterName}: {chatInput}";
         claudeContext += $"\n{prompt}";
+        
+        chatScrollView.SetActive(false);
+        chatScrollView.SetActive(true);
 
         await BeamContext.Default.Microservices().GameServer()
             .StartAdventure(Base64Encode(oldContext), Base64Encode(prompt));
+    }
+
+    private async Task PreamblePrompt()
+    {
+        await BeamContext.Default.Microservices().GameServer()
+            .StartAdventure(Base64Encode(claudeContext), Base64Encode("Introduce the scenario to the player, including the search for the nemesis."));
     }
 
     private async Task UpdateSkybox(string prompt)
@@ -94,6 +104,9 @@ public class AdventureManager : MonoBehaviour
         chatMessage.messageAuthor.text = "[DM]:";
         chatMessage.messageBody.text = parsedContext.story;
 
+        chatScrollView.SetActive(false);
+        chatScrollView.SetActive(true);
+        
         if (!string.IsNullOrEmpty(parsedContext.roomName) && parsedContext.roomName != _roomName && !string.IsNullOrEmpty(parsedContext.description))
         {
             _roomName = parsedContext.roomName;
@@ -117,14 +130,16 @@ public class AdventureManager : MonoBehaviour
             }
         }
 
-        if (!string.IsNullOrEmpty(xmlDoc.InnerText))
-        {
-            story += xmlDoc.InnerText;
-        }
-
         if (string.IsNullOrEmpty(story))
         {
-            story = message;
+            if (!string.IsNullOrEmpty(xmlDoc.InnerText))
+            {
+                story += xmlDoc.InnerText;
+            }
+            else
+            {
+                story = message;
+            }
         }
 
         var description = "";
@@ -175,8 +190,8 @@ public class AdventureManager : MonoBehaviour
 
         return new ClaudeContext
         {
-            story = story,
-            description = description,
+            story = story.Trim(),
+            description = description.Trim(),
             roomName = roomName.Replace("\n","").Trim(),
             music = music,
             characters = characterList

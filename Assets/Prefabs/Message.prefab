@@ -117,10 +117,10 @@ RectTransform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 36}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -1137}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &7860427447377345090
 CanvasRenderer:
@@ -144,6 +144,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   messageAuthor: {fileID: 8041174007714831590}
   messageBody: {fileID: 8041938559900307234}
+  myRectTransform: {fileID: 7862850289558337930}
 --- !u!1 &7928498218275021308
 GameObject:
   m_ObjectHideFlags: 0
@@ -155,6 +156,7 @@ GameObject:
   - component: {fileID: 7863271845309384156}
   - component: {fileID: 7860189959239319124}
   - component: {fileID: 8041938559900307234}
+  - component: {fileID: 2892503421175813096}
   m_Layer: 5
   m_Name: Message
   m_TagString: Untagged
@@ -177,10 +179,10 @@ RectTransform:
   m_Father: {fileID: 7862850289558337930}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 140, y: 0}
-  m_SizeDelta: {x: 843.93, y: -2}
+  m_SizeDelta: {x: 850, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &7860189959239319124
 CanvasRenderer:
@@ -226,3 +228,17 @@ MonoBehaviour:
   m_Text: 'raid with him
 
 '
+--- !u!114 &2892503421175813096
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7928498218275021308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_HorizontalFit: 0
+  m_VerticalFit: 2
