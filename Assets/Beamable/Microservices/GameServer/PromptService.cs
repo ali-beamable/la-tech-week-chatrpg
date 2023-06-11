@@ -17,7 +17,7 @@ If I need to provide an out-of-character comment (which is the only way I should
 
 Here are some additional rules about how I need you to generate response to each action:
 
-I need you to package all responses into an XML package. In this package, you are to include some specific tags every time you generate a response. The <ROOM_NAME> tag should be used to specify the name of the location I am in. The <CHARACTERS> tag should be used to contain a list of characters in the current location. The <ITEMS> tag should be used to store the list of interactable items in the current location. Use the <STORY> tag to contain the first person, long-form narrative response that explains what is going on in the story. Use the <DESCRIPTION> tag to provide a brief description of the environment (up to 200 characters).
+I need you to package all responses into an XML package. In this package, you are to include some specific tags every time you generate a response. The <ROOM_NAME> tag should be used to specify the name of the location I am in. The <CHARACTERS> tag should be used to contain a list of characters in the current location. The <ITEMS> tag should be used to store the list of interactable items in the current location. Use the <STORY> tag to contain the first person, long-form narrative response that explains what is going on in the story. Use the <DESCRIPTION> tag to provide a brief description of the environment (up to 200 characters).  Use the <MUSIC> tag to select a mood music that’s appropriate for the scene (your choices are limited to: “exploration”, “battle”, “chill”)
 
 Here are the details of the campaign setting we will be in:
 
@@ -29,15 +29,90 @@ There are no other significant human settlements nearby.
 
 Inside the village are several resources available the players. There is a tavern called the Rusty Tankard, which is where adventurers will always start. There is a blacksmith who also doubles as a weaponsmith, although the quality of his arms and armor aren’t very high. Much of the food in the village comes from local fishing and hunting; the docks on the edge of town sometimes accept trade goods from the larger cities far away, which includes grains. There are merchants off the dock area who trade in food. Several villagers make a living as fishermen (a dangerous career, since there are a number of monsters that also lurk beneath the waves).
 
-{Start by asking me for my character information. I will give you my character sheet in XML format and then you will proceed as described above.}
+Here is my character information in XML format:
+
+<character_sheet>
+<name>Tarinth</name>
+<gender>Male</gender>
+<race>Dwarf</race>
+
+<class>Druid</class>
+
+<description>A stout dwarf of the hill clans, wearing simple leathers and carrying a gnarled oaken staff, with a thick red beard and inquisitive eyes. Though quiet, his gaze seems to reflect hidden knowledge of the natural world. </description>
+<attributes>
+<strength>13</strength>
+<dexterity>9</dexterity>
+<constitution>16</constitution>
+
+<intelligence>12</intelligence>
+<wisdom>14</wisdom>
+<charisma>11   </charisma>
+</attributes>
+<hp>12</hp>
+<inventory>
+<item>Oaken Staff</item>
+<item> Leather Armor</item>
+<item>Herbalism Kit</item>
+
+</inventory>
+<nemesis>
+<name>The Mad Wizard</name>
+
+<nemesis_description>A crazed magic-user who covets ancient dwarven gold and relics, determined to raid the dungeons and crypts of all the dwarf clans to loot their treasures. </nemesis_description>
+
+</nemesis>
+
+</character_sheet>
 ";
+
+		/*
+		 * When adding additional context from additional chat interactions, add this to the end:
+		 * 
+		 * "Here is the adventure so far. (When you add the next section of the adventure, make sure the “You:” section is always last, since that is now the user’s job to indicate their next move.)";
+		 * 
+		 * ...then add "[playername]: previous input from player..."
+		 * "You: previous output from the chat"
+		 * 
+		 */
+
 	}
 
-	public string GetClaudeCharacterPrompt()
+	public string CharacterTemplate(string name, string gender, string race, string character_class, string description, string strength, string dexterity, string constitution, string intelligence, string wisdom, string charisma, string hp, string nemesis_name, string nemesis_description)
 	{
 		return @"
-Here is the Character Creation System:
+< character_sheet >
+< name > " + name + @"</ name >
+< gender > " + gender + @"</ gender >
+< race >" + race + @"</ race >
 
+<class>" + character_class + @"</class>
+
+<description>" + description + @"</description>
+<attributes>
+<strength>" + strength + @"</strength>
+<dexterity>" + dexterity + @"</dexterity>
+<constitution>" + constitution + @"</constitution>
+
+<intelligence>" + intelligence + @"</intelligence>
+<wisdom>" + wisdom + @"</wisdom>
+<charisma>" + charisma + @"</charisma>
+</attributes>
+<hp>" + hp + @"</hp>
+<inventory>
+</inventory>
+<nemesis>
+<name>" + nemesis_name + @"</name>
+
+<nemesis_description>" + nemesis_description + @"</nemesis_description>
+
+</nemesis>
+
+</character_sheet>";
+	}
+
+	public string GetClaudeCharacterPrompt(string name, string gender, string card1, string card2, string card3)
+	{
+		return @"
 I want you to help me prototype a character-creation system for a D&D game.
 
 This. character creation process involves me selecting a series of cards you deal from a specialized Tarot deck. This deck is based on the concept but is my own version based on D&D. I want you to only deal from this list of possibilities (each card is described so that you understand the core concept).
@@ -68,25 +143,9 @@ This. character creation process involves me selecting a series of cards you dea
 24. The Dawn - The first light of dawn over a slumbering city, representing awakening, realization, new beginnings or hope.
 25. The Wandering Bard - A bard with a lute and cloak of patches, representing storytelling, destiny, or the diversity of life's journey.
 
-For each step, deal 3 cards. The player’s job is to choose one of these cards.
+You will generate a character sheet based on the players selection of three of these cards from the deck. For each card I’ve selected, you will add or subtract stats from the characters attributes (strength, intelligence, etc.). You will also establish a “nemesis” character for the character based on the combination of cards they’ve selected. You will also assign the character’s race (elf, dwarf, human, tiefling, etc.) according to my selection of cards.
 
-At each step, I want you to secretly remember my selections, and use these to adjust the attributes of my character. For example, maybe particular Tarot card will increase my starting strength but decrease my starting dexterity. In addition, each Tarot card selection will establish a “nemesis” character that it a villain my character will be especially destined to confront one day.
-
-In addition, bias me towards a specific D&D race at each step based on my selections.
-
-After 3 rounds of Tarot selections, I want you to report what character attributes I have rolled (using the standard D&D attributes of Strength, Constitution, Dexterity, Intelligence, Wisdom, Charisma). Select the most appropriate character class based on these attributes, and then roll the number of hit points for this character.
-
-To start character creation I will say: “Create [male|female] character name=[name]”
-When I am ready to draw a card, I will just say “Draw”
-All of your responses should be packaged into XML.
-
-When you deal a card from the deck, package that into an XML response that has a high-level tag called <card>. Inside that include an attribute called <name> that names the card, and <description> for what I see on the card. For any hidden information, such as secret stat modifiers you are tracking, that should be hidden from the player, please put that in a <hidden> tag. For a nemesis that is identified for the character, generate a <nemesis> tag to name the nemesis, and a <nemesis_description> giving a brief narrative description of that adversary.
-
-Remember that at each step, you must show THREE (3) cards dealt from the deck, and it is my job to choose from amongst those cards only 1 that will impact my character. This is important because it gives me agency in how my character will be made.
-
-When you give me a response that includes my character sheet, use a tag called <character_sheet> to enclose all of the character information, as follows:
-
-When I select a particular card from the 3 you deal me, I will say “Select [Name of Card]”
+Your output should be an XML package called <character_sheet> with the following specification:
 
 1) Make an XML tag called <attributes> for all of the character attributes, and inside that place an XML tag for each attribute.
 
@@ -106,9 +165,13 @@ When I select a particular card from the 3 you deal me, I will say “Select [Na
 
 9) Include the <description> for a brief physical description of what the character looks like. The description tag should refer to the gender, race and class of the character. DO NOT refer to the character’s name in the description.
 
-Start by stating that you are ready to begin character creation. After I have named my character, draw the first card. After I have drawn 3 cards, reveal my character sheet.
-
-{OK, we are ready to being. Start by going through the character creation process, and then when that is completed, report my character sheet.}
+Here is the card selections I previously made. Please go ahead and generate the XML output for a " + gender + @" character named " + name + @"Cards selected: " + card1 + @"," + card2 + @"," + card3 + @"
 ";
 	}
+
+	public string GetDefaultCharacter(string name, string gender, string card1, string card2, string card3)
+	{
+		return GetClaudeCharacterPrompt("Tarinth", "Male", "The Shield Dwarf", "The Drow", "The Harper");
+	}
+
 }
