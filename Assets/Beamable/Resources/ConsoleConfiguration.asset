@@ -1,17 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b13dd78d032d942468126fb6bad6c9df, type: 3}
-  m_Name: ConsoleConfiguration
-  m_EditorClassIdentifier: 
-  ToggleAction:
-    KeyCode: 96
-  ForceEnabled: 0
+version https://git-lfs.github.com/spec/v1
+oid sha256:f730216727961ba14f07753dfd1c703957fed0fe1b455f10c2b8a8f3847a4fb7
+size 459

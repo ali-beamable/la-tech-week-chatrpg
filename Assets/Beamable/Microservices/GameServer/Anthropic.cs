@@ -30,6 +30,42 @@ namespace Anthropic
             _config = config;
             _promptService = promptService;
         }
+        
+        public async Task<ClaudeCompletionResponse> NewCharacter(string context)
+        {
+            var playerId = _ctx.UserId;
+            var characterPrompt = _promptService.GetClaudeCharacterPrompt("test", "test", "", "", "");
+            
+            // Generate Signed Request from Beamable
+            var response = await Send(new ClaudeCompletionRequest
+            {
+                Prompt = $"\n\nHuman: {characterPrompt}\n{context}\n\nAssistant:",
+                Model = ClaudeModels.ClaudeV1_3_100k,
+                MaxTokensToSample = 100000
+            });
+
+            await _notifications.NotifyPlayer(playerId, "claude.reply", response.Completion);
+
+            return response;
+        }
+        
+        public async Task<ClaudeCompletionResponse> StartAdventure(CharacterView characterView, string history, string prompt)
+        {
+            var playerId = _ctx.UserId;
+            var adventurePreamble = _promptService.GetClaudeAdventurePrompt(characterView.ToXML());
+            var adventureHistory = _promptService.GetClaudeAdventureSoFar($"{history}\n{prompt}");
+            
+            var response = await Send(new ClaudeCompletionRequest
+            {
+                Prompt = $"\n\nHuman: {adventurePreamble}\n{adventureHistory}\n\nAssistant:",
+                Model = ClaudeModels.ClaudeV1_3_100k,
+                MaxTokensToSample = 100000
+            });
+
+            await _notifications.NotifyPlayer(playerId, "claude.reply", response.Completion);
+
+            return response;
+        }
 
         public async Task<ClaudeCompletionResponse> Send(string prompt, string model, int maxTokensToSample = 100000)
         {

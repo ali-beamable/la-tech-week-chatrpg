@@ -82,7 +82,7 @@ namespace BlockadeLabs
                     throw new Exception("Polling timed out after 10 attempts.");
                 }
             }
-
+            
             return updatedInference;
         }
     }

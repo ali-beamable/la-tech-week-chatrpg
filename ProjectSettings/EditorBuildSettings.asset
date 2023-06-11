@@ -1,9 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!1045 &1
-EditorBuildSettings:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Scenes: []
-  m_configObjects:
-    com.unity.addressableassets: {fileID: 11400000, guid: 203c392e45b3f4406a6e05f6ee43019c, type: 2}
+version https://git-lfs.github.com/spec/v1
+oid sha256:35084126aa28ea413aa6419f66ad047073819050f4c8bfd60264dc0f1938ddb7
+size 553

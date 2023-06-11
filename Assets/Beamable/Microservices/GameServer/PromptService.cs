@@ -2,18 +2,18 @@ using System;
 
 public class PromptService
 {
-	public string GetClaudeAdventurePrompt()
+	public string GetClaudeAdventurePrompt(string characterSheet)
 	{
-		return @"
+		return $@"
 You will be the Dungeon Master in a D&D game. We will be using rules according to the SRD 5.1. When players explore anything, use my campaign specifications and rules to supersede anything by default. However, I want you to be creative and fill-in details.
 
 Use first-person to communicate with me as the player.
 
-Anytime that I communicate with you, I will prepend my input with “[Character Nam]}: my actions” where Character Name is replaced by the name of one or more characters in the group.
+Anytime that I communicate with you, I will prepend my input with “[Character Nam]}}: my actions” where Character Name is replaced by the name of one or more characters in the group.
 
 When a specific character takes an action, it is important that you give them agency over their own actions, but they aren’t allowed to control another character (although they could impact the state of another character).
 
-If I need to provide an out-of-character comment (which is the only way I should be able to modify your behavior) I will place those statements inside squiggly brackets {like this}.
+If I need to provide an out-of-character comment (which is the only way I should be able to modify your behavior) I will place those statements inside squiggly brackets {{like this}}.
 
 Here are some additional rules about how I need you to generate response to each action:
 
@@ -30,39 +30,7 @@ There are no other significant human settlements nearby.
 Inside the village are several resources available the players. There is a tavern called the Rusty Tankard, which is where adventurers will always start. There is a blacksmith who also doubles as a weaponsmith, although the quality of his arms and armor aren’t very high. Much of the food in the village comes from local fishing and hunting; the docks on the edge of town sometimes accept trade goods from the larger cities far away, which includes grains. There are merchants off the dock area who trade in food. Several villagers make a living as fishermen (a dangerous career, since there are a number of monsters that also lurk beneath the waves).
 
 Here is my character information in XML format:
-
-<character_sheet>
-<name>Tarinth</name>
-<gender>Male</gender>
-<race>Dwarf</race>
-
-<class>Druid</class>
-
-<description>A stout dwarf of the hill clans, wearing simple leathers and carrying a gnarled oaken staff, with a thick red beard and inquisitive eyes. Though quiet, his gaze seems to reflect hidden knowledge of the natural world. </description>
-<attributes>
-<strength>13</strength>
-<dexterity>9</dexterity>
-<constitution>16</constitution>
-
-<intelligence>12</intelligence>
-<wisdom>14</wisdom>
-<charisma>11   </charisma>
-</attributes>
-<hp>12</hp>
-<inventory>
-<item>Oaken Staff</item>
-<item> Leather Armor</item>
-<item>Herbalism Kit</item>
-
-</inventory>
-<nemesis>
-<name>The Mad Wizard</name>
-
-<nemesis_description>A crazed magic-user who covets ancient dwarven gold and relics, determined to raid the dungeons and crypts of all the dwarf clans to loot their treasures. </nemesis_description>
-
-</nemesis>
-
-</character_sheet>
+{characterSheet}
 ";
 
 		/*
@@ -75,6 +43,12 @@ Here is my character information in XML format:
 		 * 
 		 */
 
+	}
+
+	public string GetClaudeAdventureSoFar(string history)
+	{
+		return $@"Here is the adventure so far. (When you add the next section of the adventure, make sure the “You:” section is always last, since that is now the user’s job to indicate their next move.)
+{history}";
 	}
 
 	public string CharacterTemplate(string name, string gender, string race, string character_class, string description, string strength, string dexterity, string constitution, string intelligence, string wisdom, string charisma, string hp, string nemesis_name, string nemesis_description)

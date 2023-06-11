@@ -32,6 +32,42 @@ namespace Beamable.Server.Clients
         }
         
         /// <summary>
+        /// Call the NewCharacter method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.NewCharacter"/>
+        /// </summary>
+        public Beamable.Common.Promise<string> NewCharacter(string claudeContext)
+        {
+            string serialized_claudeContext = this.SerializeArgument<string>(claudeContext);
+            string[] serializedFields = new string[] {
+                    serialized_claudeContext};
+            return this.Request<string>("GameServer", "character/new", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the GetCharacter method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.GetCharacter"/>
+        /// </summary>
+        public Beamable.Common.Promise<CharacterView> GetCharacter()
+        {
+            string[] serializedFields = new string[0];
+            return this.Request<CharacterView>("GameServer", "character/get", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the StartAdventure method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.StartAdventure"/>
+        /// </summary>
+        public Beamable.Common.Promise<string> StartAdventure(string history, string prompt)
+        {
+            string serialized_history = this.SerializeArgument<string>(history);
+            string serialized_prompt = this.SerializeArgument<string>(prompt);
+            string[] serializedFields = new string[] {
+                    serialized_history,
+                    serialized_prompt};
+            return this.Request<string>("GameServer", "adventure/start", serializedFields);
+        }
+        
+        /// <summary>
         /// Call the TestClaude method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.TestClaude"/>
         /// </summary>

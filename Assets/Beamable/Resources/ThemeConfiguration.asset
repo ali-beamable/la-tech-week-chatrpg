@@ -1,15 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3a23440130264d8e9f2ccd1a83b7e89, type: 3}
-  m_Name: ThemeConfiguration
-  m_EditorClassIdentifier: 
-  Style: {fileID: 11400000, guid: a6258767dbbfe4bb9b8217aacf33cbc4, type: 2}
+version https://git-lfs.github.com/spec/v1
+oid sha256:fe455afa1a7056c341d85986b97ee18c11ce4808cf0561aa3bf42eea47505c4b
+size 484
