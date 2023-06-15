@@ -224,6 +224,24 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!1 &385721094 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1954786719320804, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
+  m_PrefabInstance: {fileID: 1477384309}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &385721099
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 385721094}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfab6a25662c04a82998393483147a38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  contentView: {fileID: 1477384312}
 --- !u!1 &615408882
 GameObject:
   m_ObjectHideFlags: 0
@@ -451,7 +469,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 1349803361}
-  rotationSpeed: 0
+  rotationSpeed: 1
 --- !u!4 &1349803361
 Transform:
   m_ObjectHideFlags: 0
@@ -590,6 +608,34 @@ PrefabInstance:
     - target: {fileID: 114028256933147492, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
       propertyPath: m_ChildForceExpandHeight
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114037730589494980, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114037730589494980, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114037730589494980, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 385721099}
+    - target: {fileID: 114037730589494980, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 114037730589494980, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: FixScrollView
+      objectReference: {fileID: 0}
+    - target: {fileID: 114037730589494980, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: ScrollViewFixer, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 114037730589494980, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 114057333686021648, guid: 2d8b76d680eb0d045babdbf4198bd213, type: 3}
       propertyPath: m_OnSubmit.m_PersistentCalls.m_Calls.Array.size

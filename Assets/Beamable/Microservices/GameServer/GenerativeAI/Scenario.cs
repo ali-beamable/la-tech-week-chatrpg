@@ -85,7 +85,7 @@ public class Scenario
         public double guidance = 7.0;
         public int width = 512;
         public int height = 512;
-        public int numInferenceSteps = 50;
+        public int numInferenceSteps = 30;
         public int numSamples = 1;
         public bool enableSafetyCheck = false;
     }

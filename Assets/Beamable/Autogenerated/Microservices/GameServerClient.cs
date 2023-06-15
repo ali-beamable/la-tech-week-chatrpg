@@ -35,12 +35,20 @@ namespace Beamable.Server.Clients
         /// Call the NewCharacter method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.NewCharacter"/>
         /// </summary>
-        public Beamable.Common.Promise<string> NewCharacter(string claudeContext)
+        public Beamable.Common.Promise<CharacterView> NewCharacter(string name, string gender, string card1, string card2, string card3)
         {
-            string serialized_claudeContext = this.SerializeArgument<string>(claudeContext);
+            string serialized_name = this.SerializeArgument<string>(name);
+            string serialized_gender = this.SerializeArgument<string>(gender);
+            string serialized_card1 = this.SerializeArgument<string>(card1);
+            string serialized_card2 = this.SerializeArgument<string>(card2);
+            string serialized_card3 = this.SerializeArgument<string>(card3);
             string[] serializedFields = new string[] {
-                    serialized_claudeContext};
-            return this.Request<string>("GameServer", "character/new", serializedFields);
+                    serialized_name,
+                    serialized_gender,
+                    serialized_card1,
+                    serialized_card2,
+                    serialized_card3};
+            return this.Request<CharacterView>("GameServer", "character/new", serializedFields);
         }
         
         /// <summary>

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Xml;
 using Beamable;
@@ -34,12 +35,26 @@ public class AdventureManager : MonoBehaviour
         beamContext.Api.NotificationService.Subscribe("blockade.reply", OnBlockadeReply);
         beamContext.Api.NotificationService.Subscribe("character.update", OnCharacterUpdate);
 
-        _characterView = await BeamContext.Default.Microservices().GameServer().GetCharacter();
+        if (CharacterCreation.SelectedCharacter == null)
+        {
+            _characterView = await BeamContext.Default.Microservices().GameServer().GetCharacter();
+        }
+        else
+        {
+            _characterView = CharacterCreation.SelectedCharacter;
+        }
         
         characterWidget.SetCharacter(_characterView);
+        
+        var preamble = PreamblePrompt();
+        var skyboxLoad = LoadFromUrl(_characterView.skyboxUrl);
+        var tasks = new List<Task>
+        {
+            preamble,
+            skyboxLoad
+        };
 
-        await PreamblePrompt();
-        await LoadFromUrl(_characterView.skyboxUrl);
+        await Task.WhenAll(tasks);
         //await UpdateSkybox("A dark and ominous forest on the edge of massive chasm. Shadows and gloom abound.");
     }
     
@@ -65,12 +80,21 @@ public class AdventureManager : MonoBehaviour
         var oldContext = claudeContext;
         var prompt = $"{_characterView.characterName}: {chatInput}";
         claudeContext += $"\n{prompt}";
-        
-        chatScrollView.SetActive(false);
-        chatScrollView.SetActive(true);
+
+        RefreshScrollView();
 
         await BeamContext.Default.Microservices().GameServer()
             .StartAdventure(Base64Encode(oldContext), Base64Encode(prompt));
+    }
+
+    private void RefreshScrollView()
+    {
+        var rectTransforms = chatScrollView.GetComponentsInChildren<RectTransform>();
+        foreach (var rectTransform in rectTransforms)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
+        }
+        Canvas.ForceUpdateCanvases();
     }
 
     private async Task PreamblePrompt()
@@ -104,8 +128,7 @@ public class AdventureManager : MonoBehaviour
         chatMessage.messageAuthor.text = "[DM]:";
         chatMessage.messageBody.text = parsedContext.story;
 
-        chatScrollView.SetActive(false);
-        chatScrollView.SetActive(true);
+        RefreshScrollView();
         
         if (!string.IsNullOrEmpty(parsedContext.roomName) && parsedContext.roomName != _roomName && !string.IsNullOrEmpty(parsedContext.description))
         {

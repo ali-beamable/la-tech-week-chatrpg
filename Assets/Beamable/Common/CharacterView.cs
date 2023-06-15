@@ -12,11 +12,19 @@ public class CharacterView
     public string characterClass;
     public string characterLevel;
     public string characterDescription;
+    public string characterBackground;
     public string characterRace;
     public string characterGender;
     
     public string nemesisName;
     public string nemesisDescription;
+
+    public int strength;
+    public int dexterity;
+    public int constitution;
+    public int intelligence;
+    public int charisma;
+    public int wisdom;
 
     public int currentHp;
     public int maxHp;
@@ -37,6 +45,15 @@ public class CharacterView
     <gender>{characterGender}</gender>
     <race>{characterRace}</race>
     <description>{characterDescription}</description>
+    <background>{characterBackground}</background>
+    <attributes>
+        <strength>{strength}</strength>
+        <dexterity>{dexterity}</dexterity>
+        <constitution>{constitution}</constitution>
+        <intelligence>{intelligence}</intelligence>
+        <wisdom>{wisdom}</wisdom>
+        <charisma>{charisma}</charisma>
+    </attributes>
     <health_points>{currentHp}</health_points>
     <mana_points>{currentMana}</mana_points>
     <nemesis>

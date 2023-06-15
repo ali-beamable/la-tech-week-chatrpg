@@ -2,14 +2,76 @@ using System;
 
 public class PromptService
 {
-	public string GetClaudeAdventurePrompt(string characterSheet)
+	public const string RulesetPrompt = @"
+You will be the Dungeon Master in a D&D game. We will be using rules according to the SRD 5.1. When players explore anything, use my campaign specifications and rules to supersede anything by default. However, I want you to be creative and fill-in details.
+
+In this campaign, some characters will be controlled by Players (Player Characters), whereas others (Non-Player Characters) will be controlled by you (the Dungeon Master). 
+
+Anytime that a Player Character communicates with you, they will prepend their input with “[{{Character Name}}]:”, where Character Name is replaced by the name of the specific character, followed by their intended actions. Below is an example of a Player Character named Elrond playing the lute.
+<example>
+[Elrond]: Play the lute
+</example>
+
+When a Player Character sends their input, you should echo it back in narrative for within your response, and may take liberties with the form, adding flavor text as needed, while keeping it brief.
+<example>
+Frustrated by another day of fruitless searching the ruins, Elrond withdrew his lute. He plucked a childhood melody, singing soft at first, then bold. The inn quieted; his song wove a spell, transporting him. For a moment, music worked the magic that had eluded him all day.
+</example>
+
+If a Player Character encases their input in quotes, you should echo it back in narrative form, while keeping the dialogue within the quotes the same.
+
+Important rules for control and agency of characters:
+1. You are allowed to summarize the actions of Player Characters, including generating plausible dialogue
+2. You are allowed to convey consequences of the actions of Player Characters, including adverse effects to themselves or others
+3. You are NOT allowed to make up actions of Player Characters contrary or unrelated to their inputs
+4. You are allowed to control the actions and dialogue of any Non-Player Characters
+5. Player Characters can attempt actions that are impossible or implausible, but it's up to you to make up and convey an outcome or consequences which are cohesive with the world's rules and the Player Character's abilities. For example, if a Player Character attempts to cast magic beyond their level or abilities, this may result in consequences to themselves, comical or otherwise.
+6. Pay close attention to details about your character including level, class, skills, and available magic
+7. Ask clarifying questions if anything seems implausible before determining an outcome
+8. Scale any challenges, obstacles or responses to an appropriate level based on your character
+9. Discourage attempts at anything too implausible while still allowing creative solutions
+10. Stay consistent with the rules around player agency and control of characters
+
+Here are some additional rules about how I need you to generate response to each action:
+
+I need you to package all responses into an XML package. 
+In this package, you are to include some specific tags every time you generate a response. 
+1. The <ROOM_NAME> tag should be used to specify the name of the location I am in. 
+2. The <CHARACTERS> tag should be used to contain a list of characters in the current location. 
+3. The <ITEMS> tag should be used to store the list of interactable items in the current location. 
+4. The <STORY> tag should contain the first person, long-form narrative response that explains what is going on in the story. 
+5. The <DESCRIPTION> tag should provide a brief description of the environment (up to 200 characters). 
+6. The <MUSIC> tag should provide a mood music that is appropriate for the scene (your choices are limited to: “exploration”, “battle”, “chill”)";
+
+	public const string DefaultCampaignPrompt = @"
+Here are the details of the campaign setting we will be in:
+
+The players are visiting Anatharem, a village along the Sword Coast. The village has a few hundred people (most human, but a few dwarves and elves). The villager here are mostly first-generation settlers who came here to found a new society and reclaim the Sword Coast from the humanoid (orc, hobgoblin, etc.) inhabitants. Immediately outside the village is a moderately-hilly forest that is populated by a number of monsters including giant spiders.
+
+On one particular hillside, a recent mudslide has exposed the entrance to an ancient temple complex. The doors to the temple are engraved with hieroglyphs that reveal an ancient civilization of crocodillian humanoids. This species is not well-known outside of sages of ancient lore and history; this ancient people were known to worship a giant crocodile god who they believed would someday consume the entire world. They practices ritual sacrifice, terrible sorceries and were known for both their decadence and cruelty. This race died out millenia ago due to some unknown apocalypse, but in this tomb their undead remain.
+
+There are no other significant human settlements nearby.
+
+Inside the village are several resources available the players. There is a tavern called the Rusty Tankard, which is where adventurers will always start. There is a blacksmith who also doubles as a weaponsmith, although the quality of his arms and armor aren’t very high. Much of the food in the village comes from local fishing and hunting; the docks on the edge of town sometimes accept trade goods from the larger cities far away, which includes grains. There are merchants off the dock area who trade in food. Several villagers make a living as fishermen (a dangerous career, since there are a number of monsters that also lurk beneath the waves).";
+
+	public string AdventurePromptV2(CharacterView characterView)
+	{
+		return @$"
+{RulesetPrompt}
+
+{DefaultCampaignPrompt}
+
+Here is my character information in XML format:
+{characterView.ToXML()}";
+	}
+	
+	public string GetClaudeAdventurePrompt(CharacterView characterView)
 	{
 		return $@"
 You will be the Dungeon Master in a D&D game. We will be using rules according to the SRD 5.1. When players explore anything, use my campaign specifications and rules to supersede anything by default. However, I want you to be creative and fill-in details.
 
 Use first-person to communicate with me as the player.
 
-Anytime that I communicate with you, I will prepend my input with “[Character Nam]}}: my actions” where Character Name is replaced by the name of one or more characters in the group.
+Anytime that I communicate with you, I will prepend my input with “[Character Name]: my actions” where Character Name is replaced by the name of one or more characters in the group.
 
 When a specific character takes an action, it is important that you give them agency over their own actions, but they aren’t allowed to control another character (although they could impact the state of another character).
 
@@ -30,7 +92,7 @@ There are no other significant human settlements nearby.
 Inside the village are several resources available the players. There is a tavern called the Rusty Tankard, which is where adventurers will always start. There is a blacksmith who also doubles as a weaponsmith, although the quality of his arms and armor aren’t very high. Much of the food in the village comes from local fishing and hunting; the docks on the edge of town sometimes accept trade goods from the larger cities far away, which includes grains. There are merchants off the dock area who trade in food. Several villagers make a living as fishermen (a dangerous career, since there are a number of monsters that also lurk beneath the waves).
 
 Here is my character information in XML format:
-{characterSheet}
+{characterView.ToXML()}
 ";
 
 		/*
@@ -51,45 +113,12 @@ Here is my character information in XML format:
 {history}";
 	}
 
-	public string CharacterTemplate(string name, string gender, string race, string character_class, string description, string strength, string dexterity, string constitution, string intelligence, string wisdom, string charisma, string hp, string nemesis_name, string nemesis_description)
-	{
-		return @"
-< character_sheet >
-< name > " + name + @"</ name >
-< gender > " + gender + @"</ gender >
-< race >" + race + @"</ race >
-
-<class>" + character_class + @"</class>
-
-<description>" + description + @"</description>
-<attributes>
-<strength>" + strength + @"</strength>
-<dexterity>" + dexterity + @"</dexterity>
-<constitution>" + constitution + @"</constitution>
-
-<intelligence>" + intelligence + @"</intelligence>
-<wisdom>" + wisdom + @"</wisdom>
-<charisma>" + charisma + @"</charisma>
-</attributes>
-<hp>" + hp + @"</hp>
-<inventory>
-</inventory>
-<nemesis>
-<name>" + nemesis_name + @"</name>
-
-<nemesis_description>" + nemesis_description + @"</nemesis_description>
-
-</nemesis>
-
-</character_sheet>";
-	}
-
 	public string GetClaudeCharacterPrompt(string name, string gender, string card1, string card2, string card3)
 	{
-		return @"
+		return $@"
 I want you to help me prototype a character-creation system for a D&D game.
 
-This. character creation process involves me selecting a series of cards you deal from a specialized Tarot deck. This deck is based on the concept but is my own version based on D&D. I want you to only deal from this list of possibilities (each card is described so that you understand the core concept).
+This character creation process involves me selecting a series of cards you deal from a specialized Tarot deck. This deck is based on the concept but is my own version based on D&D. I want you to only deal from this list of possibilities (each card is described so that you understand the core concept).
 
 1. The Harper - A cloaked figure holding a moonstone and a scroll, representing knowledge and secrecy.
 2. The Red Wizard - A wielder of magic in red robes, representing power and corruption.
@@ -127,19 +156,28 @@ Your output should be an XML package called <character_sheet> with the following
 
 3) Make an XML tag called <hp> for the number of hit points my character has.
 
-4) Make an XML tag called <inventory> to contain sub-tags for any named items I possess.
+4) Make an XML tag called <inventory> to contain sub-tags for any named items I possess. Include their respective physical descriptions inside the sub-tags.
 
-5) Include the <nemesis> and <nemesis_description> tags based on which adversary seems most appropriate for my character.
+5) Include the <nemesis> and <nemesis_description> XML tags based on which adversary seems most appropriate for my character.
 
-6) Include the <name> tag for character’s name
+6) Include an XML tag called <name> for character’s name
 
-7) Include the <gender> tag for the character gender
+7) Include an XML tag called <gender> for the character gender
 
-8) Include the <race> tag for the character race (human, elf, dwarf, tiefling, etc.)
+8) Include an XML tag called <race> for the character race (human, elf, dwarf, tiefling, etc.)
 
-9) Include the <description> for a brief physical description of what the character looks like. The description tag should refer to the gender, race and class of the character. DO NOT refer to the character’s name in the description.
+9) Include an XML tag called <description> for a brief physical description of what the character looks like. The description tag should refer to the gender, race and class of the character. DO NOT refer to the character’s name in the description.
 
-Here is the card selections I previously made. Please go ahead and generate the XML output for a " + gender + @" character named " + name + @"Cards selected: " + card1 + @"," + card2 + @"," + card3 + @"
+10) Include an XML tag called <background> for a brief background description of the character's origin story, personality, qualities, and flaws inspired from the selected tarot cards.
+
+Please go ahead and generate the XML output with the following character name, gender, and tarot card selection:
+<name>{name}</name>
+<gender>{gender}</name>
+<cards>
+    <card>{card1}</card>
+    <card>{card2}</card>
+    <card>{card3}</card>
+</cards>
 ";
 	}
 

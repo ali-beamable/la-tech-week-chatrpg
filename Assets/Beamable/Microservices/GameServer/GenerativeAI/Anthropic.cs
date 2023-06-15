@@ -31,28 +31,23 @@ namespace Anthropic
             _promptService = promptService;
         }
         
-        public async Task<ClaudeCompletionResponse> NewCharacter(string context)
+        public async Task<ClaudeCompletionResponse> NewCharacter(string name, string gender, string card1, string card2, string card3)
         {
-            var playerId = _ctx.UserId;
-            var characterPrompt = _promptService.GetClaudeCharacterPrompt("test", "test", "", "", "");
-            
-            // Generate Signed Request from Beamable
+            var characterPrompt = _promptService.GetClaudeCharacterPrompt(name, gender, card1, card2, card3);
             var response = await Send(new ClaudeCompletionRequest
             {
-                Prompt = $"\n\nHuman: {characterPrompt}\n{context}\n\nAssistant:",
+                Prompt = $"\n\nHuman: {characterPrompt}\n\nAssistant:",
                 Model = ClaudeModels.ClaudeV1_3_100k,
                 MaxTokensToSample = 100000
             });
-
-            await _notifications.NotifyPlayer(playerId, "claude.reply", response.Completion);
-
+            
             return response;
         }
         
         public async Task<ClaudeCompletionResponse> StartAdventure(CharacterView characterView, string history, string prompt)
         {
             var playerId = _ctx.UserId;
-            var adventurePreamble = _promptService.GetClaudeAdventurePrompt(characterView.ToXML());
+            var adventurePreamble = _promptService.GetClaudeAdventurePrompt(characterView);
             var adventureHistory = _promptService.GetClaudeAdventureSoFar($"{history}\n{prompt}");
             
             var response = await Send(new ClaudeCompletionRequest

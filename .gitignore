@@ -72,3 +72,4 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 .idea/.idea.LA-TechWeek-Hackathon/.idea
 Assets/Beamable/Microservices/.DS_Store
+.DS_Store

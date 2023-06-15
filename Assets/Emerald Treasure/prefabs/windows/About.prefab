@@ -36,7 +36,7 @@ RectTransform:
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
@@ -576,7 +576,7 @@ MonoBehaviour:
     mi elementum faucibus. Aenean aliquet vestibulum dolor, vel auctor justo convallis
     a. Vestibulum convallis sem eu lorem mattis, ut facilisis turpis scelerisque.
 
-    
+
 
     Mauris
     pellentesque odio ut lectus blandit sagittis. Duis in elit eu orci euismod imperdiet
@@ -586,28 +586,28 @@ MonoBehaviour:
     malesuada fames ac ante ipsum primis in faucibus. Morbi metus erat, placerat
     non magna et, mattis bibendum metus.
 
-    
 
-    Vivamus non scelerisque ipsum.
-    Proin sit amet pharetra ipsum. Fusce nec ornare neque. Aenean vehicula convallis
-    mauris, vitae aliquet felis ullamcorper ut. Vivamus risus nisi, pellentesque
-    non hendrerit ac, sodales bibendum turpis. Duis est ante, congue ac mauris a,
-    tristique efficitur ante. Aenean finibus dolor vitae nunc euismod lacinia. Integer
-    placerat eros malesuada, ultrices tellus molestie, facilisis nunc. Quisque dolor
-    justo, venenatis ut aliquam vitae, molestie nec neque. Vivamus ac sem eu est
-    eleifend porttitor at vitae magna. Nullam orci justo, iaculis a nibh sed, lobortis
-    elementum sem.
 
-    
+    Vivamus non scelerisque ipsum. Proin
+    sit amet pharetra ipsum. Fusce nec ornare neque. Aenean vehicula convallis mauris,
+    vitae aliquet felis ullamcorper ut. Vivamus risus nisi, pellentesque non hendrerit
+    ac, sodales bibendum turpis. Duis est ante, congue ac mauris a, tristique efficitur
+    ante. Aenean finibus dolor vitae nunc euismod lacinia. Integer placerat eros
+    malesuada, ultrices tellus molestie, facilisis nunc. Quisque dolor justo, venenatis
+    ut aliquam vitae, molestie nec neque. Vivamus ac sem eu est eleifend porttitor
+    at vitae magna. Nullam orci justo, iaculis a nibh sed, lobortis elementum sem.
 
-    Duis in velit eget massa vulputate pulvinar. Cras
-    et ante iaculis, tristique nulla sit amet, vehicula nisi. Sed ornare imperdiet
-    nisl, at sagittis lacus faucibus non. Sed sagittis nulla eget convallis mattis.
-    Morbi tincidunt interdum justo nec vestibulum. Donec ut euismod sem. Pellentesque
-    scelerisque mauris ac urna viverra, quis convallis felis ultrices. Vivamus a
-    velit pharetra, euismod mauris ut, porttitor purus. Aenean velit ligula, ullamcorper
-    sed vulputate at, sagittis et ligula. Sed dictum aliquet mauris. Vivamus accumsan
-    augue sit amet molestie tempor.'
+
+
+    Duis
+    in velit eget massa vulputate pulvinar. Cras et ante iaculis, tristique nulla
+    sit amet, vehicula nisi. Sed ornare imperdiet nisl, at sagittis lacus faucibus
+    non. Sed sagittis nulla eget convallis mattis. Morbi tincidunt interdum justo
+    nec vestibulum. Donec ut euismod sem. Pellentesque scelerisque mauris ac urna
+    viverra, quis convallis felis ultrices. Vivamus a velit pharetra, euismod mauris
+    ut, porttitor purus. Aenean velit ligula, ullamcorper sed vulputate at, sagittis
+    et ligula. Sed dictum aliquet mauris. Vivamus accumsan augue sit amet molestie
+    tempor.'
 --- !u!114 &114426481596276344
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -891,8 +891,8 @@ RectTransform:
   m_Father: {fileID: 224475695397470538}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1215,7 +1215,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 114789029582721192}
   m_HandleRect: {fileID: 224353209966228512}
   m_Direction: 2
-  m_Value: 0.9999995
+  m_Value: 1
   m_Size: 0.80973583
   m_NumberOfSteps: 0
   m_OnValueChanged:

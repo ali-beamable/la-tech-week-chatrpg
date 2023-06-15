@@ -9,6 +9,7 @@ public class Config
     public string AnthropicApiKey => _settings.GetSetting("game", "anthropic_key");
     public string ScenarioApiKey => _settings.GetSetting("game", "scenario_key");
     public string BlockadeLabsApiKey => _settings.GetSetting("game", "blockade_key");
+    public string OpenAIKey => _settings.GetSetting("game", "openai_key");
 
     public Config(IMicroserviceRealmConfigService realmConfigService)
     {
