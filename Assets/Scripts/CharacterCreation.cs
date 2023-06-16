@@ -1,10 +1,9 @@
-using System.Threading.Tasks;
 using Beamable;
+using Beamable.Api;
 using Beamable.Common.Content;
 using Beamable.Serialization.SmallerJSON;
-using Beamable.Server;
 using Beamable.Server.Clients;
-using BlockadeLabsSDK;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -13,9 +12,7 @@ public class CharacterCreation : MonoBehaviour
 {
     public static CharacterView SelectedCharacter;
     
-    public Text claudeTextResponse;
-    
-    public GameObject aboutText;
+    public CharacterSheet characterSheet;
     public GameObject cardSet1;
     public GameObject cardSet2;
     public GameObject cardSet3;
@@ -26,8 +23,7 @@ public class CharacterCreation : MonoBehaviour
     
     async void Start()
     {
-        claudeTextResponse.text = "";
-        aboutText.SetActive(false);
+        characterSheet.gameObject.SetActive(false);
         cardSet1.SetActive(false);
         cardSet2.SetActive(false);
         cardSet3.SetActive(false);
@@ -40,13 +36,12 @@ public class CharacterCreation : MonoBehaviour
         try
         {
             SelectedCharacter = await BeamContext.Default.Microservices().GameServer().GetCharacter();
-            aboutText.SetActive(true);
-            claudeTextResponse.text +=
-                $"{SelectedCharacter.characterBackground}\n\n{SelectedCharacter.characterDescription}\n\n{SelectedCharacter.ToXML()}";
+            characterSheet.gameObject.SetActive(true);
+            characterSheet.Character = SelectedCharacter;
         }
-        catch (MicroserviceException ex)
+        catch (PlatformRequesterException ex)
         {
-            if (ex.Error == "CharacterNotFound")
+            if (ex.Error.error == "CharacterNotFound")
             {
                 InitializeCharacterCreator();
             }
@@ -58,7 +53,8 @@ public class CharacterCreation : MonoBehaviour
         Debug.Log("Character Created!");
 
         SelectedCharacter = await BeamContext.Default.Microservices().GameServer().GetCharacter();
-        claudeTextResponse.text += SelectedCharacter.ToXML();
+        characterSheet.gameObject.SetActive(true);
+        characterSheet.Character = SelectedCharacter;
     }
     
     void OnCharacterPreview(object message)
@@ -67,13 +63,14 @@ public class CharacterCreation : MonoBehaviour
         
         var parsedArrayDict = message as ArrayDict;
         var response = parsedArrayDict["stringValue"] as string;
-        claudeTextResponse.text += $"{response}\n\n";
+        var characterView = JsonConvert.DeserializeObject<CharacterView>(response);
+        
+        characterSheet.gameObject.SetActive(true);
+        characterSheet.Character = characterView;
     }
 
     void InitializeCharacterCreator()
     {
-        claudeTextResponse.text = "";
-        aboutText.SetActive(false);
         cardSet1.SetActive(true);
         cardSet2.SetActive(false);
         cardSet3.SetActive(false);
@@ -113,14 +110,12 @@ public class CharacterCreation : MonoBehaviour
     async void OnTarotCardsSelected()
     {
         Debug.Log("Tarot Cards Selection complete!");
-        aboutText.SetActive(true);
+        //aboutText.SetActive(true);
         var resolvedCard1 = await card1Selection.Resolve();
         var resolvedCard2 = await card2Selection.Resolve();
         var resolvedCard3 = await card3Selection.Resolve();
         
         await BeamContext.Default.Microservices().GameServer().NewCharacter(
-            "Tarinth", 
-            "Male", 
             resolvedCard1.cardName, 
             resolvedCard2.cardName, 
             resolvedCard3.cardName

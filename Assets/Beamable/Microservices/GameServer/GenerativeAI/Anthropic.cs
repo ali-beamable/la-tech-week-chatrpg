@@ -30,20 +30,7 @@ namespace Anthropic
             _config = config;
             _promptService = promptService;
         }
-        
-        public async Task<ClaudeCompletionResponse> NewCharacter(string name, string gender, string card1, string card2, string card3)
-        {
-            var characterPrompt = _promptService.GetClaudeCharacterPrompt(name, gender, card1, card2, card3);
-            var response = await Send(new ClaudeCompletionRequest
-            {
-                Prompt = $"\n\nHuman: {characterPrompt}\n\nAssistant:",
-                Model = ClaudeModels.ClaudeV1_3_100k,
-                MaxTokensToSample = 100000
-            });
-            
-            return response;
-        }
-        
+
         public async Task<ClaudeCompletionResponse> StartAdventure(CharacterView characterView, string history, string prompt)
         {
             var playerId = _ctx.UserId;

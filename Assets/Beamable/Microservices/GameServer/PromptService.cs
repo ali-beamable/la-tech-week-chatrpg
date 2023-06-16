@@ -113,7 +113,7 @@ Here is my character information in XML format:
 {history}";
 	}
 
-	public string GetClaudeCharacterPrompt(string name, string gender, string card1, string card2, string card3)
+	public string GetClaudeCharacterPrompt(string card1, string card2, string card3)
 	{
 		return $@"
 I want you to help me prototype a character-creation system for a D&D game.
@@ -146,7 +146,7 @@ This character creation process involves me selecting a series of cards you deal
 24. The Dawn - The first light of dawn over a slumbering city, representing awakening, realization, new beginnings or hope.
 25. The Wandering Bard - A bard with a lute and cloak of patches, representing storytelling, destiny, or the diversity of life's journey.
 
-You will generate a character sheet based on the players selection of three of these cards from the deck. For each card I’ve selected, you will add or subtract stats from the characters attributes (strength, intelligence, etc.). You will also establish a “nemesis” character for the character based on the combination of cards they’ve selected. You will also assign the character’s race (elf, dwarf, human, tiefling, etc.) according to my selection of cards.
+You will generate a character sheet based on the players selection of three of these cards from the deck. For each card I’ve selected, you will add or subtract stats from the characters attributes (strength, intelligence, etc.). You will also establish a “nemesis” character for the character based on the combination of cards they’ve selected. You will also assign the character’s gender and race (elf, dwarf, human, tiefling, etc.) according to my selection of cards.
 
 Your output should be an XML package called <character_sheet> with the following specification:
 
@@ -160,19 +160,17 @@ Your output should be an XML package called <character_sheet> with the following
 
 5) Include the <nemesis> and <nemesis_description> XML tags based on which adversary seems most appropriate for my character.
 
-6) Include an XML tag called <name> for character’s name
+6) Include an XML tag called <gender> for the character gender
 
-7) Include an XML tag called <gender> for the character gender
+7) Include an XML tag called <race> for the character race (human, elf, dwarf, tiefling, etc.)
 
-8) Include an XML tag called <race> for the character race (human, elf, dwarf, tiefling, etc.)
+8) Include an XML tag called <description> for a brief physical description of what the character looks like. The description tag should refer to the gender, race and class of the character. DO NOT refer to the character’s name in the description.
 
-9) Include an XML tag called <description> for a brief physical description of what the character looks like. The description tag should refer to the gender, race and class of the character. DO NOT refer to the character’s name in the description.
+9) Include an XML tag called <background> for a brief background description of the character's origin story, personality, qualities, and flaws inspired from the selected tarot cards.
 
-10) Include an XML tag called <background> for a brief background description of the character's origin story, personality, qualities, and flaws inspired from the selected tarot cards.
+10) Include an XML tag called <name> for character’s name, which you will select to match the character's gender, race, and background.
 
-Please go ahead and generate the XML output with the following character name, gender, and tarot card selection:
-<name>{name}</name>
-<gender>{gender}</name>
+Please go ahead and generate the XML output with the following tarot card selection:
 <cards>
     <card>{card1}</card>
     <card>{card2}</card>
@@ -180,10 +178,4 @@ Please go ahead and generate the XML output with the following character name, g
 </cards>
 ";
 	}
-
-	public string GetDefaultCharacter(string name, string gender, string card1, string card2, string card3)
-	{
-		return GetClaudeCharacterPrompt("Tarinth", "Male", "The Shield Dwarf", "The Drow", "The Harper");
-	}
-
 }

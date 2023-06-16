@@ -8,6 +8,7 @@ using Beamable.Microservices.ChatRpg.Storage;
 using Beamable.Server;
 using BlockadeLabs;
 using OpenAI;
+using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
 
 namespace Beamable.Microservices
@@ -44,7 +45,7 @@ namespace Beamable.Microservices
 		}
 
 		[ClientCallable("character/new")]
-		public async Task<CharacterView> NewCharacter(string name, string gender, string card1, string card2, string card3)
+		public async Task<CharacterView> NewCharacter(string card1, string card2, string card3)
 		{
 			var db = await Storage.GameDatabaseDatabase();
 			var defaultCampaignName = "DefaultCampaign";
@@ -56,7 +57,7 @@ namespace Beamable.Microservices
 			
 			// Feed Character Creation Prompt into Claude to obtain a character sheet
 			var promptService = Provider.GetService<PromptService>();
-			var characterPrompt = promptService.GetClaudeCharacterPrompt(name, gender, card1, card2, card3);
+			var characterPrompt = promptService.GetClaudeCharacterPrompt(card1, card2, card3);
 			var claude = Provider.GetService<Claude>();
 			var claudeResponse = await claude.Send(new ClaudeCompletionRequest
 			{
@@ -104,8 +105,9 @@ namespace Beamable.Microservices
 				Debug.LogError(ex);
 				throw new MicroserviceException(500, "UnableToGenerateCharacter", "Failed to parse LLM output during character creation.");
 			}
-			
-			await Services.Notifications.NotifyPlayer(Context.UserId, "character.preview", $"{newCharacter.Background}\n\n{newCharacter.Description}");
+
+			var characterJson = JsonConvert.SerializeObject(newCharacter.ToCharacterView());
+			await Services.Notifications.NotifyPlayer(Context.UserId, "character.preview", characterJson);
 
 			//TODO: Perform a Vector Search to see if we can find a good portrait match
 			// Need to implement OpenAI embeddings

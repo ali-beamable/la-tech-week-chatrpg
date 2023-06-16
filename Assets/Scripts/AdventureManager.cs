@@ -43,8 +43,8 @@ public class AdventureManager : MonoBehaviour
         {
             _characterView = CharacterCreation.SelectedCharacter;
         }
-        
-        characterWidget.SetCharacter(_characterView);
+
+        characterWidget.Character = _characterView;
         
         var preamble = PreamblePrompt();
         var skyboxLoad = LoadFromUrl(_characterView.skyboxUrl);

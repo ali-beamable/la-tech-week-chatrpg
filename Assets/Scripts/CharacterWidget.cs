@@ -1,11 +1,12 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
 public class CharacterWidget : MonoBehaviour
 {
+    public CharacterSheet characterSheet;
+    
     public Text characterName;
     public Text characterClass;
     public Text characterLevel;
@@ -16,14 +17,33 @@ public class CharacterWidget : MonoBehaviour
     public Image manaBar;
     
     public RawImage currentPicture;
-
     public GameObject healthWarning;
 
+    private string currentImageUrl;
+
+    public CharacterView Character
+    {
+        get => _characterView;
+        set
+        {
+            _characterView = value;
+            OnCharacterUpdated();
+        }
+    }
+    
     [SerializeField]
     private CharacterView _characterView;
 
-    // Update is called once per frame
-    void Update()
+    public void OnOpenCharacterSheet()
+    {
+        if (characterSheet != null)
+        {
+            characterSheet.gameObject.SetActive(true);
+            characterSheet.Character = _characterView;
+        }
+    }
+    
+    void OnCharacterUpdated()
     {
         if (_characterView != null)
         {
@@ -36,28 +56,26 @@ public class CharacterWidget : MonoBehaviour
             healthBar.fillAmount = _characterView.PercentHp;
             manaBar.fillAmount = _characterView.PercentMana;
 
-            if (_characterView.PercentHp <= 50 && !healthWarning.activeSelf)
+            if (_characterView.PercentHp <= 0.5 && !healthWarning.activeSelf)
             {
                 healthWarning.SetActive(true);
             }
-            else if(_characterView.PercentHp > 50 && healthWarning.activeSelf)
+            else if(_characterView.PercentHp > 0.5 && healthWarning.activeSelf)
             {
                 healthWarning.SetActive(false);
             }
-        }
-    }
 
-    public void SetCharacter(CharacterView characterView)
-    {
-        _characterView = characterView;
-        if (_characterView != null)
-        {
-            StartCoroutine(DownloadImage(_characterView.imageUrl));
+            if (!string.IsNullOrEmpty(_characterView.imageUrl) && _characterView.imageUrl != currentImageUrl)
+            {
+                StartCoroutine(DownloadImage(_characterView.imageUrl));
+            }
         }
     }
 
     IEnumerator DownloadImage(string url)
-    {   
+    {
+        currentImageUrl = url;
+        
         UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
         yield return request.SendWebRequest();
         if(request.result == UnityWebRequest.Result.ConnectionError) 
