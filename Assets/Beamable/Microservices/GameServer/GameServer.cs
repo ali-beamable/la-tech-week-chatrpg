@@ -253,8 +253,6 @@ namespace Beamable.Microservices
 		[ClientCallable("blockade")]
 		public async Task<string> TestBlockade(string prompt)
 		{
-			var playerId = Context.UserId;
-			// This code executes on the server.
 			var skyboxStyle = SkyboxStyles.FANTASY_LAND;
 			var blockade = Provider.GetService<SkyboxApi>();
 			
@@ -267,8 +265,32 @@ namespace Beamable.Microservices
 				inferenceRsp = rsp.Request;
 			}
 			
-			await Services.Notifications.NotifyPlayer(playerId, "blockade.reply", inferenceRsp.FileUrl);
 			Debug.Log($"Skybox creation complete: {inferenceRsp.FileUrl}");
+			await Services.Notifications.NotifyPlayer(Context.UserId, "blockade.reply", inferenceRsp.FileUrl);
+
+			// Get Embeddings
+			var openAI = Provider.GetService<OpenAI_API>();
+			var embeddingsContent = $"{skyboxStyle.ToString()}: {prompt}";
+			var embeddingsVector = await openAI.GetEmbeddings(embeddingsContent);
+			
+			var db = await Storage.GameDatabaseDatabase();
+			var inserted = await BlockadeSkyboxesCollection.Insert(db, new BlockadeSkybox
+			{
+				StyleId = (int)skyboxStyle,
+				StyleName = skyboxStyle.ToString(),
+				Prompt = prompt,
+				FileUrl = inferenceRsp.FileUrl,
+				DepthMapUrl = inferenceRsp.DepthMapUrl,
+				ThumbUrl = inferenceRsp.ThumbUrl,
+				Content = embeddingsContent,
+				Embedding = embeddingsVector
+			});
+
+			if (!inserted)
+			{
+				Debug.LogError("Failed to insert blockade document into database.");
+			}
+			
 			return inferenceRsp.FileUrl;
 		}
 	}
