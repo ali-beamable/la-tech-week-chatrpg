@@ -58,6 +58,28 @@ namespace Beamable.Server.Clients
         }
         
         /// <summary>
+        /// Call the Ready method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.Ready"/>
+        /// </summary>
+        public Beamable.Common.Promise<WorldState> Ready()
+        {
+            string[] serializedFields = new string[0];
+            return this.Request<WorldState>("GameServer", "adventure/ready", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the Play method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.Play"/>
+        /// </summary>
+        public Beamable.Common.Promise<WorldState> Play(string playerAction)
+        {
+            string serialized_playerAction = this.SerializeArgument<string>(playerAction);
+            string[] serializedFields = new string[] {
+                    serialized_playerAction};
+            return this.Request<WorldState>("GameServer", "adventure/play", serializedFields);
+        }
+        
+        /// <summary>
         /// Call the StartAdventure method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.StartAdventure"/>
         /// </summary>

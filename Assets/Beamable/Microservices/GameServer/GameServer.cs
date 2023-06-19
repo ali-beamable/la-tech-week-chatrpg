@@ -44,6 +44,54 @@ namespace Beamable.Microservices
 			return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
 		}
 
+		private async Task<CampaignCharacter> GetCharacter(string campaignName, long playerId)
+		{
+            var db = await Storage.GameDatabaseDatabase();
+            var characters = await CampaignCharacterCollection.GetCharacters(db, campaignName, Context.UserId.ToString());
+            if (!characters.Any())
+            {
+                throw new MicroserviceException(404, "CharacterNotFound",
+                    "A character has not been created yet for this campaign.");
+            }
+
+            return characters.First();
+        }
+
+		private CampaignEvent ParseCampaignEventFromXML(string campaignName, string xml)
+		{
+            XmlDocument xmlDoc = new XmlDocument(); // Create an XML document object
+            xmlDoc.LoadXml(xml);
+            var parsedRoomName = xmlDoc.GetElementsByTagName("ROOM_NAME")[0].InnerText;
+            var parsedStory = xmlDoc.GetElementsByTagName("STORY")[0].InnerText;
+            var parsedDescription = xmlDoc.GetElementsByTagName("DESCRIPTION")[0].InnerText;
+            var parsedMusic = xmlDoc.GetElementsByTagName("MUSIC")[0].InnerText;
+
+			string[] parsedItems = Array.Empty<string>();
+			var xmlItems = xmlDoc.GetElementsByTagName("ITEMS");
+			if(xmlItems.Count > 0)
+			{
+				parsedItems = xmlItems[0].InnerText.Trim().Replace(", ", ",").Split(",");
+            }
+
+            string[] parsedCharacters = Array.Empty<string>();
+            var xmlCharacters = xmlDoc.GetElementsByTagName("CHARACTERS");
+            if (xmlItems.Count > 0)
+            {
+                parsedCharacters = xmlCharacters[0].InnerText.Trim().Replace(", ", ",").Split(",");
+            }
+
+            return new CampaignEvent
+            {
+                CampaignName = campaignName,
+                RoomName = parsedRoomName,
+                Characters = parsedCharacters,
+                Items = parsedItems,
+                Story = parsedStory,
+                Description = parsedDescription,
+                Music = parsedMusic
+            };
+        }
+
 		[ClientCallable("character/new")]
 		public async Task<CharacterView> NewCharacter(string card1, string card2, string card3)
 		{
@@ -167,29 +215,88 @@ namespace Beamable.Microservices
 			}
 
 			return characters.First().ToCharacterView();
-
-			/*
-			return new CharacterView
-			{
-				characterClass = "Druid",
-				characterLevel = "1",
-				characterName = "Tarinth",
-				currentHp = 200,
-				maxHp = 500,
-				currentMana = 23,
-				maxMana = 120,
-				characterGender = "Male",
-				characterRace = "Dwarf",
-				characterDescription = "A stout dwarf of the hill clans, wearing simple leathers and carrying a gnarled oaken staff, with a thick red beard and inquisitive eyes. Though quiet, his gaze seems to reflect hidden knowledge of the natural world.",
-				nemesisName = "The Mad Wizard",
-				nemesisDescription = "A crazed magic-user who covets ancient dwarven gold and relics, determined to raid the dungeons and crypts of all the dwarf clans to loot their treasures.",
-				skyboxUrl = "https://blockade-platform-production.s3.amazonaws.com/images/imagine/high_quality_detailed_digital_painting_cd_vr_computer_render_fantasy__ab0d379706d4de4c__5758744_.jpg?ver=1",
-				imageUrl = "https://cdn.cloud.scenario.com/assets/CMmu-yJxQnCBX48MCOv2XA?p=100&Expires=1687392000&Key-Pair-Id=K36FIAB9LE2OLR&Signature=PyL-YtiHFWe3DHRPvPMNe7rHB5guG-BXZtoF7RGkVCp24JbhepTngDj5nb8chkXuU8zLBOpUGJlQTpxV3TvKNHelywjutMFdW8RdZ8qHf7DZnjTws7p4jwHl2xaG4mGSxmUSXQtlxriFo01zIdzAKrg5Rp~Tp02eQkNIQXjL8cNOXnrq8~MUy7NxrPJvofkILLBtIhMNLTeC-qOKB0iUYG~YqYrHV6PrcxQxVLkwskRUmoTy67-JhRQOckb1ryvi6WMGQq9rhcyaCfmTNIM0ox8NQjFdYOIJUBQxQgnF6SvmocSu70FpVnv4NhNPzwL~SjnDnOQNzRpMEqjBbhnaCQ__"
-			};
-			*/
 		}
-		
-		[ClientCallable("adventure/start")]
+
+		[ClientCallable("adventure/ready")]
+		public async Task<WorldState> Ready()
+		{
+            var claude = Provider.GetService<Claude>();
+            var promptService = Provider.GetService<PromptService>();
+
+            var db = await Storage.GameDatabaseDatabase();
+            var campaignName = "DefaultCampaign";
+            var character = await GetCharacter(campaignName, Context.UserId);
+			var campaignEvents = await CampaignEventsCollection.GetOrderedCampaignEvents(db, campaignName);
+
+			var newCampaign = campaignEvents.Count == 0;
+            var prompt = promptService.AdventurePromptV2(character, campaignEvents);
+            if (newCampaign)
+			{
+                // This is a new campaign, inject a starting point
+                prompt += "\n\nBriefly introduce the campaign to the player in narrative form.";
+			}
+			else
+			{
+                // Summarize the events of the campaign so far
+                prompt += "\n\nBriefly summarize the campaign so far, and emphasizing what is important for the player's character.";
+            }
+
+            var response = await claude.Send(new ClaudeCompletionRequest
+            {
+                Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
+                Model = ClaudeModels.ClaudeV1_3_100k,
+                MaxTokensToSample = 100000
+            });
+
+			var campaignEvent = ParseCampaignEventFromXML(campaignName, $"<root>{response.Completion}</root>");
+			if(newCampaign)
+			{
+				var inserted = await CampaignEventsCollection.Insert(db, campaignEvent);
+				if (!inserted)
+					throw new MicroserviceException(500, "FailedToSaveCampaignEvent", "Failed to persist initial campaign event to the database.");
+			}
+
+            var worldState = campaignEvent.ToWorldState();
+            var worldJson = JsonConvert.SerializeObject(worldState);
+			await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
+
+			return worldState;
+        }
+
+        [ClientCallable("adventure/play")]
+        public async Task<WorldState> Play(string playerAction)
+        {
+            var claude = Provider.GetService<Claude>();
+            var promptService = Provider.GetService<PromptService>();
+
+            var db = await Storage.GameDatabaseDatabase();
+            var campaignName = "DefaultCampaign";
+			var character = await GetCharacter(campaignName, Context.UserId);
+			var campaignEvents = await CampaignEventsCollection.GetOrderedCampaignEvents(db, campaignName);
+
+			var prompt = promptService.AdventurePromptV2(character, campaignEvents);
+			prompt += $"\n\n[{character.Name}]: {playerAction}";
+            var response = await claude.Send(new ClaudeCompletionRequest
+            {
+                Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
+                Model = ClaudeModels.ClaudeV1_3_100k,
+                MaxTokensToSample = 100000
+            });
+
+			var xml = $"<root>{response.Completion}</root>";
+			var campaignEvent = ParseCampaignEventFromXML(campaignName, xml);
+			var inserted = await CampaignEventsCollection.Insert(db, campaignEvent);
+            if (!inserted)
+                throw new MicroserviceException(500, "FailedToSaveCampaignEvent", "Failed to persist initial campaign event to the database.");
+
+            var worldState = campaignEvent.ToWorldState();
+            var worldJson = JsonConvert.SerializeObject(worldState);
+            await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
+
+			return worldState;
+        }
+
+        [ClientCallable("adventure/start")]
 		public async Task<string> StartAdventure(string history, string prompt)
 		{
 			var decodedHistory = Base64Decode(history);
