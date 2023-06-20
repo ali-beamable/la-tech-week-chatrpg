@@ -1,13 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.AddressableAssets;
 
 [ContentType("tarot")]
 public class TarotContent : ContentObject
 {
     public string cardName;
     public string cardDescription;
-    public Object cardTexture;
+    public AssetReferenceTexture2D textureReference;
 }

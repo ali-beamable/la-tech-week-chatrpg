@@ -253,6 +253,7 @@ namespace Beamable.Microservices
 			var campaignEvent = ParseCampaignEventFromXML(campaignName, $"<root>{response.Completion}</root>");
 			if(newCampaign)
 			{
+				campaignEvent.SkyboxUrl = "https://blockade-platform-production.s3.amazonaws.com/images/imagine/high_quality_detailed_digital_painting_cd_vr_computer_render_fantasy__6c9ca4a642910ce8__6154819_.jpg?ver=1";
 				var inserted = await CampaignEventsCollection.Insert(db, campaignEvent);
 				if (!inserted)
 					throw new MicroserviceException(500, "FailedToSaveCampaignEvent", "Failed to persist initial campaign event to the database.");

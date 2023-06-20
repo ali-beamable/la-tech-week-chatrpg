@@ -1,11 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using Beamable;
 using Beamable.Common.Content;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
 
 public class TarotCard : MonoBehaviour
@@ -18,12 +13,8 @@ public class TarotCard : MonoBehaviour
         await BeamContext.Default.OnReady;
         var resolved = await contentRef.Resolve();
         var rawImage = GetComponent<RawImage>();
-        
-        var assetPath = AssetDatabase.GetAssetPath(resolved.cardTexture);
-        var texture = AssetDatabase.LoadMainAssetAtPath(assetPath) as Texture2D;
+        var textureAsset = await resolved.textureReference.LoadAssetAsync().Task;
 
-        //var instanceTexture = Instantiate(resolved.cardTexture);
-        //var texture = instanceTexture as Texture2D;
-        rawImage.texture = texture;
+        rawImage.texture = textureAsset;
     }
 }
