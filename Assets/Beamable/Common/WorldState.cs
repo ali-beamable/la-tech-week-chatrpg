@@ -1,5 +1,5 @@
 [System.Serializable]
-public class WorldState
+public record WorldState
 {
     public string roomName;
     public string description;
@@ -7,8 +7,8 @@ public class WorldState
     public string story;
     public string[] characters;
     public string[] items;
-
-    //TODO: Add blockade skybox here
+    public string skyboxUrl;
+    public string dm;
 
     public string ToXML()
     {

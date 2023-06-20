@@ -12,9 +12,7 @@ namespace BlockadeLabs
     {
         private readonly string _url = "https://backend.blockadelabs.com/api/v1";
 
-        private readonly RequestContext _ctx;
         private readonly HttpClient _httpClient;
-        private readonly IMicroserviceNotificationsApi _notifications;
         private readonly Config _config;
         
         private readonly JsonSerializerSettings _newtonSoftJsonSettings = new JsonSerializerSettings
@@ -22,11 +20,9 @@ namespace BlockadeLabs
             NullValueHandling = NullValueHandling.Ignore
         };
         
-        public SkyboxApi(RequestContext ctx, HttpClient httpClient, IMicroserviceNotificationsApi notifications, Config config)
+        public SkyboxApi(HttpClient httpClient, Config config)
         {
-            _ctx = ctx;
             _httpClient = httpClient;
-            _notifications = notifications;
             _config = config;
         }
 

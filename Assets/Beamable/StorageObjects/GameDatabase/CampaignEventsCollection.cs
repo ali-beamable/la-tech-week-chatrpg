@@ -58,6 +58,21 @@ namespace Beamable.Microservices.ChatRpg.Storage
             }
         }
 
+        public static async Task<bool> Replace(IMongoDatabase db, CampaignEvent campaignEvent)
+        {
+            var collection = await Get(db);
+            try
+            {
+                var filter = Builders<CampaignEvent>.Filter.Eq(x => x.Id, campaignEvent.Id);
+                await collection.ReplaceOneAsync(filter, campaignEvent);
+                return true;
+            }
+            catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+            {
+                return false;
+            }
+        }
+
         public static async Task<bool> Insert(IMongoDatabase db, IEnumerable<CampaignEvent> campaignEvents)
         {
             var collection = await Get(db);
@@ -83,10 +98,10 @@ namespace Beamable.Microservices.ChatRpg.Storage
         public string Description { get; set; }
         public string Music { get; set; }
         public string Story { get; set; }
-        public string[] Characters;
-        public string[] Items;
-
-        //TODO: Add blockade skybox here
+        public string[] Characters { get; set; }
+        public string[] Items { get; set; }
+        public string DM { get; set; }
+        public string SkyboxUrl { get; set; }
 
         public WorldState ToWorldState()
         {
@@ -97,7 +112,9 @@ namespace Beamable.Microservices.ChatRpg.Storage
                 music = Music,
                 story = Story,
                 characters = Characters,
-                items = Items
+                items = Items,
+                skyboxUrl = SkyboxUrl,
+                dm = DM
             };
         }
     }

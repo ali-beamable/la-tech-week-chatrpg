@@ -11,56 +11,18 @@ namespace Anthropic
 	{
         private readonly string _url = "https://api.anthropic.com/v1/complete";
 
-        private readonly RequestContext _ctx;
         private readonly HttpClient _httpClient;
-        private readonly IMicroserviceNotificationsApi _notifications;
         private readonly Config _config;
-        private readonly PromptService _promptService;
 
         private readonly JsonSerializerSettings _newtonSoftJsonSettings = new JsonSerializerSettings
         {
             NullValueHandling = NullValueHandling.Ignore
         };
 
-        public Claude(RequestContext ctx, HttpClient httpClient, IMicroserviceNotificationsApi notifications, Config config, PromptService promptService)
+        public Claude(HttpClient httpClient, Config config)
         {
-            _ctx = ctx;
             _httpClient = httpClient;
-            _notifications = notifications;
             _config = config;
-            _promptService = promptService;
-        }
-
-        public async Task<ClaudeCompletionResponse> StartAdventure(CharacterView characterView, string history, string prompt)
-        {
-            var playerId = _ctx.UserId;
-            var adventurePreamble = _promptService.GetClaudeAdventurePrompt(characterView);
-            var adventureHistory = _promptService.GetClaudeAdventureSoFar($"{history}\n{prompt}");
-            
-            var response = await Send(new ClaudeCompletionRequest
-            {
-                Prompt = $"\n\nHuman: {adventurePreamble}\n{adventureHistory}\n\nAssistant:",
-                Model = ClaudeModels.ClaudeV1_3_100k,
-                MaxTokensToSample = 100000
-            });
-
-            await _notifications.NotifyPlayer(playerId, "claude.reply", response.Completion);
-
-            return response;
-        }
-
-        public async Task<ClaudeCompletionResponse> Send(string prompt, string model, int maxTokensToSample = 100000)
-        {
-            // Generate Signed Request from Beamable
-            var requestPayload = new ClaudeCompletionRequest
-            {
-                Prompt = prompt,
-                Model = model,
-                MaxTokensToSample = maxTokensToSample,
-            };
-            var response = await Send(requestPayload);
-
-            return response;
         }
 
         public async Task<ClaudeCompletionResponse> Send(ClaudeCompletionRequest requestPayload)

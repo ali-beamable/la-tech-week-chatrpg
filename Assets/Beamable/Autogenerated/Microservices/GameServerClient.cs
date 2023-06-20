@@ -80,20 +80,6 @@ namespace Beamable.Server.Clients
         }
         
         /// <summary>
-        /// Call the StartAdventure method on the GameServer microservice
-        /// <see cref="Beamable.Microservices.GameServer.StartAdventure"/>
-        /// </summary>
-        public Beamable.Common.Promise<string> StartAdventure(string history, string prompt)
-        {
-            string serialized_history = this.SerializeArgument<string>(history);
-            string serialized_prompt = this.SerializeArgument<string>(prompt);
-            string[] serializedFields = new string[] {
-                    serialized_history,
-                    serialized_prompt};
-            return this.Request<string>("GameServer", "adventure/start", serializedFields);
-        }
-        
-        /// <summary>
         /// Call the TestClaude method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.TestClaude"/>
         /// </summary>

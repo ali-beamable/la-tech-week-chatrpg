@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class CharacterView
+public record CharacterView
 {
     public string imageUrl;
     public string skyboxUrl;

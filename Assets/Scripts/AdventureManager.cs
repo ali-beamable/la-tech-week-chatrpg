@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Xml;
 using Beamable;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Clients;
 using BlockadeLabsSDK;
+using Newtonsoft.Json;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,225 +16,118 @@ public class AdventureManager : MonoBehaviour
     public InputField chatInputField;
     
     public BlockadeLabsSkybox blockadeSkybox;
-    private CharacterView _characterView;
-    private string _roomName;
 
-    private string claudeContext = "";
-    
-    // Start is called before the first frame update
-    async void Start()
-    {
-        RemoveAllChildren(chatScrollView);
-        
-        var beamContext = BeamContext.Default;
-        await beamContext.OnReady;
-        
-        beamContext.Api.NotificationService.Subscribe("claude.reply", OnClaudeReply);
-        beamContext.Api.NotificationService.Subscribe("blockade.reply", OnBlockadeReply);
-        beamContext.Api.NotificationService.Subscribe("character.update", OnCharacterUpdate);
-
-        if (CharacterCreation.SelectedCharacter == null)
-        {
-            _characterView = await BeamContext.Default.Microservices().GameServer().GetCharacter();
-        }
-        else
-        {
-            _characterView = CharacterCreation.SelectedCharacter;
-        }
-
-        characterWidget.Character = _characterView;
-        
-        var preamble = PreamblePrompt();
-        var skyboxLoad = LoadFromUrl(_characterView.skyboxUrl);
-        var tasks = new List<Task>
-        {
-            preamble,
-            skyboxLoad
-        };
-
-        await Task.WhenAll(tasks);
-        //await UpdateSkybox("A dark and ominous forest on the edge of massive chasm. Shadows and gloom abound.");
-    }
-    
-    void RemoveAllChildren(GameObject parent)
-    {
-        int childCount = parent.transform.childCount;
-        for (int i = childCount - 1; i >= 0; i--)
-        {
-            GameObject child = parent.transform.GetChild(i).gameObject;
-            Destroy(child);
-        }
-    }
+    [SerializeField] private CharacterView _characterView;
+    [SerializeField] private WorldState _worldState;
 
     public async void OnChatSubmit()
     {
         var chatInput = chatInputField.text;
         chatInputField.text = "";
-        
+
         var newMessage = Instantiate(chatMessagePrefab, chatScrollView.transform);
         var chatMessage = newMessage.GetComponent<ChatMessage>();
         chatMessage.messageAuthor.text = $"{_characterView.characterName}:";
         chatMessage.messageBody.text = chatInput;
-        var oldContext = claudeContext;
-        var prompt = $"{_characterView.characterName}: {chatInput}";
-        claudeContext += $"\n{prompt}";
 
         RefreshScrollView();
 
         await BeamContext.Default.Microservices().GameServer()
-            .StartAdventure(Base64Encode(oldContext), Base64Encode(prompt));
+            .Play(chatInput);
     }
 
-    private void RefreshScrollView()
+    async void Start()
     {
-        var rectTransforms = chatScrollView.GetComponentsInChildren<RectTransform>();
-        foreach (var rectTransform in rectTransforms)
+        RemoveAllChildren(chatScrollView);
+
+        var beamContext = BeamContext.Default;
+        await beamContext.OnReady;
+
+        beamContext.Api.NotificationService.Subscribe("world.update", OnWorldUpdate);
+        beamContext.Api.NotificationService.Subscribe("character.update", OnCharacterUpdate);
+
+        CharacterView character = await BeamContext.Default.Microservices().GameServer().GetCharacter();
+        if (CharacterCreation.SelectedCharacter == null)
         {
-            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
+            character = await BeamContext.Default.Microservices().GameServer().GetCharacter();
         }
-        Canvas.ForceUpdateCanvases();
+        else
+        {
+            character = CharacterCreation.SelectedCharacter;
+        }
+        RefreshCharacter(character);
+
+        //TODO: Make this a loading screen ideally
+        await beamContext.Microservices().GameServer().Ready();
     }
 
-    private async Task PreamblePrompt()
+    void OnWorldUpdate(object message)
     {
-        await BeamContext.Default.Microservices().GameServer()
-            .StartAdventure(Base64Encode(claudeContext), Base64Encode("Introduce the scenario to the player, including the search for the nemesis."));
-    }
-
-    private async Task UpdateSkybox(string prompt)
-    {
-        await BeamContext.Default.Microservices().GameServer().TestBlockade(prompt);
-    }
-    
-    private void OnCharacterUpdate(object message)
-    {
-        
-    }
-    
-    private void OnClaudeReply(object message)
-    {
-        Debug.Log("Claude Message Received!");
-
         var parsedArrayDict = message as ArrayDict;
-        var response = parsedArrayDict["stringValue"] as string;
-        claudeContext += $"You:\n{response}";;
-        
+        var payload = parsedArrayDict["stringValue"] as string;
+        var worldState = JsonConvert.DeserializeObject<WorldState>(payload);
+        RefreshWorldState(worldState);
+    }
+
+    //Update Room Name, Characters, Music, Skybox, etc.
+    void RefreshWorldState(WorldState worldState)
+    {
+        if (worldState != _worldState)
+        {
+            if(_worldState.skyboxUrl != worldState.skyboxUrl && !string.IsNullOrEmpty(worldState.skyboxUrl))
+            {
+                // Maybe should be Coroutine? Maybe await all the way down?
+                LoadSkyboxFromUrl(worldState.skyboxUrl);
+            }
+
+            if(!string.IsNullOrEmpty(worldState.story))
+            {
+                InsertChatMessage("[Story]:", worldState.story);
+            }
+
+            if (!string.IsNullOrEmpty(worldState.dm))
+            {
+                InsertChatMessage("[DM]:", worldState.dm);
+            }
+
+            //TODO: Simplify, ideally should inject a World State service of some kind that is observable
+            _worldState = worldState;
+        }
+    }
+
+    void OnCharacterUpdate(object message)
+    {
+        var parsedArrayDict = message as ArrayDict;
+        var payload = parsedArrayDict["stringValue"] as string;
+        var character = JsonConvert.DeserializeObject<CharacterView>(payload);
+        RefreshCharacter(character);
+    }
+
+    void RefreshCharacter(CharacterView character)
+    {
+        if (character != _characterView)
+        {
+            //TODO: Simplify, ideally should inject a Character service of some kind that is observable
+            _characterView = character;
+            characterWidget.Character = character;
+        }
+    }
+
+    void InsertChatMessage(string author, string body)
+    {
         var newMessage = Instantiate(chatMessagePrefab, chatScrollView.transform);
         var chatMessage = newMessage.GetComponent<ChatMessage>();
-        
-        var parsedContext = ParseContextXML(response);
-        chatMessage.messageAuthor.text = "[DM]:";
-        chatMessage.messageBody.text = parsedContext.story;
+        chatMessage.messageAuthor.text = author;
+        chatMessage.messageBody.text = body;
 
-        RefreshScrollView();
-        
-        if (!string.IsNullOrEmpty(parsedContext.roomName) && parsedContext.roomName != _roomName && !string.IsNullOrEmpty(parsedContext.description))
-        {
-            _roomName = parsedContext.roomName;
-            var roomDescription = $"{parsedContext.roomName}. {parsedContext.description}".Replace("\n"," ").Trim();
-            UpdateSkybox(roomDescription);
-        }
+        StartCoroutine(RefreshScrollView());
     }
 
-    private ClaudeContext ParseContextXML(string message)
+    async void LoadSkyboxFromUrl(string skyboxUrl)
     {
-        XmlDocument xmlDoc = new XmlDocument(); // Create an XML document object
-        xmlDoc.LoadXml($"<claude>{message}</claude>");
-
-        var story = "";
-        foreach (XmlNode node in xmlDoc.GetElementsByTagName("STORY"))
+        if (!string.IsNullOrWhiteSpace(skyboxUrl))
         {
-            var nodeText = node.InnerText;
-            if (!string.IsNullOrEmpty(nodeText))
-            {
-                story += $"{node.InnerText}\n";
-            }
-        }
-
-        if (string.IsNullOrEmpty(story))
-        {
-            if (!string.IsNullOrEmpty(xmlDoc.InnerText))
-            {
-                story += xmlDoc.InnerText;
-            }
-            else
-            {
-                story = message;
-            }
-        }
-
-        var description = "";
-        foreach (XmlNode node in xmlDoc.GetElementsByTagName("DESCRIPTION"))
-        {
-            var nodeText = node.InnerText;
-            if (!string.IsNullOrEmpty(nodeText))
-            {
-                description += $"{node.InnerText}\n";
-            }
-        }
-        
-        var roomName = "";
-        foreach (XmlNode node in xmlDoc.GetElementsByTagName("ROOM_NAME"))
-        {
-            var nodeText = node.InnerText;
-            if (!string.IsNullOrEmpty(nodeText))
-            {
-                roomName = $"{node.InnerText}\n";//Grab only latest
-            }
-        }
-        
-        var music = "";
-        foreach (XmlNode node in xmlDoc.GetElementsByTagName("MUSIC"))
-        {
-            var nodeText = node.InnerText;
-            if (!string.IsNullOrEmpty(nodeText))
-            {
-                music += $"{node.InnerText}\n";
-            }
-        }
-        
-        var characters = "";
-        foreach (XmlNode node in xmlDoc.GetElementsByTagName("CHARACTERS"))
-        {
-            var nodeText = node.InnerText;
-            if (!string.IsNullOrEmpty(nodeText))
-            {
-                characters += $"{node.InnerText},";
-            }
-        }
-        characters = characters.Replace(", ", ",").Trim();
-        var characterList = Array.Empty<string>();
-        if (!string.IsNullOrEmpty(characters))
-        {
-            characterList = characters.Split(",");
-        }
-
-        return new ClaudeContext
-        {
-            story = story.Trim(),
-            description = description.Trim(),
-            roomName = roomName.Replace("\n","").Trim(),
-            music = music,
-            characters = characterList
-        };
-    }
-
-    // Update skybox
-    private async void OnBlockadeReply(object message)
-    {
-        Debug.Log("Blockade Reply received!");
-        var parsedArrayDict = message as ArrayDict;
-        var url = parsedArrayDict["stringValue"] as string;
-
-        await LoadFromUrl(url);
-    }
-    
-    private async Task LoadFromUrl(string textureUrl)
-    {
-        if (!string.IsNullOrWhiteSpace(textureUrl))
-        {
-            var image = await ApiRequests.GetImagineImage(textureUrl);
-
+            var image = await ApiRequests.GetImagineImage(skyboxUrl);
             var texture = new Texture2D(512, 512, TextureFormat.RGB24, false);
             texture.LoadImage(image);
 
@@ -250,11 +141,28 @@ public class AdventureManager : MonoBehaviour
             }
         }
     }
-    
-    private static string Base64Encode(string plainText) 
+
+    void RemoveAllChildren(GameObject parent)
     {
-        var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-        return System.Convert.ToBase64String(plainTextBytes);
+        int childCount = parent.transform.childCount;
+        for (int i = childCount - 1; i >= 0; i--)
+        {
+            GameObject child = parent.transform.GetChild(i).gameObject;
+            Destroy(child);
+        }
+    }
+
+    IEnumerator RefreshScrollView()
+    {
+        // Wait a frame
+        yield return 0;
+
+        var rectTransforms = chatScrollView.GetComponentsInChildren<RectTransform>();
+        foreach (var rectTransform in rectTransforms)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
+        }
+        Canvas.ForceUpdateCanvases();
     }
 }
 

@@ -37,12 +37,6 @@ namespace Beamable.Microservices
 			var config = init.GetService<Config>();
 			await config.Init();
 		}
-		
-		private static string Base64Decode(string base64EncodedData) 
-		{
-			var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
-			return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
-		}
 
 		private async Task<CampaignCharacter> GetCharacter(string campaignName, long playerId)
 		{
@@ -80,7 +74,14 @@ namespace Beamable.Microservices
                 parsedCharacters = xmlCharacters[0].InnerText.Trim().Replace(", ", ",").Split(",");
             }
 
-            return new CampaignEvent
+			string parsedDM = null;
+			var xmlDM = xmlDoc.GetElementsByTagName("DM");
+			if (xmlDM.Count > 0)
+			{
+				parsedDM = xmlDM[0].InnerText;
+			}
+
+			return new CampaignEvent
             {
                 CampaignName = campaignName,
                 RoomName = parsedRoomName,
@@ -88,7 +89,8 @@ namespace Beamable.Microservices
                 Items = parsedItems,
                 Story = parsedStory,
                 Description = parsedDescription,
-                Music = parsedMusic
+                Music = parsedMusic,
+				DM = parsedDM
             };
         }
 
@@ -238,7 +240,7 @@ namespace Beamable.Microservices
 			else
 			{
                 // Summarize the events of the campaign so far
-                prompt += "\n\nBriefly summarize the campaign so far, and emphasizing what is important for the player's character.";
+                prompt += "\n\nBriefly summarize the campaign so far, adopting a tone appropriate for a returning player that may have forgotten some details.";
             }
 
             var response = await claude.Send(new ClaudeCompletionRequest
@@ -255,6 +257,10 @@ namespace Beamable.Microservices
 				if (!inserted)
 					throw new MicroserviceException(500, "FailedToSaveCampaignEvent", "Failed to persist initial campaign event to the database.");
 			}
+			else
+            {
+				campaignEvent.SkyboxUrl = campaignEvents.First().SkyboxUrl;
+            }
 
             var worldState = campaignEvent.ToWorldState();
             var worldJson = JsonConvert.SerializeObject(worldState);
@@ -287,39 +293,56 @@ namespace Beamable.Microservices
 			var campaignEvent = ParseCampaignEventFromXML(campaignName, xml);
 			var inserted = await CampaignEventsCollection.Insert(db, campaignEvent);
             if (!inserted)
-                throw new MicroserviceException(500, "FailedToSaveCampaignEvent", "Failed to persist initial campaign event to the database.");
+                throw new MicroserviceException(500, "FailedToSaveCampaignEvent", "Failed to persist campaign event to the database.");
 
             var worldState = campaignEvent.ToWorldState();
             var worldJson = JsonConvert.SerializeObject(worldState);
             await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
 
+			//Update Skybox
+			//TODO: Search Vector Database first
+			var skyboxStyle = SkyboxStyles.FANTASY_LAND;
+			var blockade = Provider.GetService<SkyboxApi>();
+
+			Debug.Log("Creating Skybox...");
+			var inferenceRsp = await blockade.CreateSkybox(skyboxStyle, campaignEvent.Description);
+			if (!inferenceRsp.IsCompleted)
+			{
+				Debug.Log("Polling skybox for completion...");
+				var rsp = await blockade.PollSkyboxToCompletion(inferenceRsp.Id.Value);
+				inferenceRsp = rsp.Request;
+			}
+			campaignEvent.SkyboxUrl = inferenceRsp.FileUrl;
+			var updated = await CampaignEventsCollection.Replace(db, campaignEvent);
+			if (!updated)
+				throw new MicroserviceException(500, "FailedToUpdateCampaignEvent", "Failed to update campaign event skybox in the database.");
+
+			worldState = campaignEvent.ToWorldState();
+			worldJson = JsonConvert.SerializeObject(worldState);
+			await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
+
+			// Get Embeddings
+			var openAI = Provider.GetService<OpenAI_API>();
+			var embeddingsContent = $"{skyboxStyle}: {prompt}";
+			var embeddingsVector = await openAI.GetEmbeddings(embeddingsContent);
+
+			var insertedSkybox = await BlockadeSkyboxesCollection.Insert(db, new BlockadeSkybox
+			{
+				StyleId = (int)skyboxStyle,
+				StyleName = skyboxStyle.ToString(),
+				Prompt = campaignEvent.Description,
+				FileUrl = inferenceRsp.FileUrl,
+				DepthMapUrl = inferenceRsp.DepthMapUrl,
+				ThumbUrl = inferenceRsp.ThumbUrl,
+				Content = embeddingsContent,
+				Embedding = embeddingsVector
+			});
+
+			if (!insertedSkybox)
+				throw new MicroserviceException(500, "FailedToSaveSkybox", "Failed to save skybox to the database.");
+
 			return worldState;
         }
-
-        [ClientCallable("adventure/start")]
-		public async Task<string> StartAdventure(string history, string prompt)
-		{
-			var decodedHistory = Base64Decode(history);
-			var decodedPrompt = Base64Decode(prompt);
-			
-			var db = await Storage.GameDatabaseDatabase();
-			var defaultCampaignName = "DefaultCampaign";
-			
-			var characters = await CampaignCharacterCollection.GetCharacters(db, defaultCampaignName, Context.UserId.ToString());
-			if (!characters.Any())
-			{
-				throw new MicroserviceException(404, "CharacterNotFound",
-					"A character has not been created yet for this campaign.");
-			}
-
-			var character = characters.First().ToCharacterView();
-			
-			// This code executes on the server.
-			var claude = Provider.GetService<Claude>();
-			var response = await claude.StartAdventure(character, decodedHistory, decodedPrompt);
-
-			return response.Completion;
-		}
 		
 		[ClientCallable("claude")]
 		public async Task<string> TestClaude(string prompt)

@@ -55,14 +55,22 @@ Inside the village are several resources available the players. There is a taver
 	public string AdventurePromptV2(CampaignCharacter campaignCharacter, List<CampaignEvent> campaignEvents)
 	{
 		string prompt = $"{RulesetPrompt}\n\n{DefaultCampaignPrompt}";
-        prompt += $"\n\nHere is my character information in XML format:\n{campaignCharacter.ToCharacterView().ToXML()}";
+        prompt += $"\n\nHere is the campaign adventure so far in XML format:\n{campaignCharacter.ToCharacterView().ToXML()}";
 
-        if (campaignEvents.Count > 0)
+		if (campaignEvents.Count > 0)
 		{
 			string campaignEventsNarrative = string.Join("\n", campaignEvents.Select(x => x.Story));
-            prompt += $"\n\nHere is the campaign adventure so far:\n{campaignEventsNarrative}";
+			var mostRecentEvent = campaignEvents.First();
+			prompt += @$"
+<ROOM_NAME>{mostRecentEvent.RoomName}</ROOM_NAME>
+<DESCRIPTION>{mostRecentEvent.Description}</DESCRIPTION>
+<CHARACTERS>{string.Join(", ", mostRecentEvent.Characters)}</CHARACTERS>
+<ITEMS>{string.Join(", ", mostRecentEvent.Items)}</ITEMS>
+<MUSIC>{mostRecentEvent.Music}</MUSIC>
+<STORY>{campaignEventsNarrative}</STORY>";
         }
 
+		prompt += "\n\nRemember to include *all* the XML tags outlined in the rules in your response.";
 
         return prompt;
 	}

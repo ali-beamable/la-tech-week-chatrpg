@@ -26,8 +26,11 @@ public class CharacterWidget : MonoBehaviour
         get => _characterView;
         set
         {
-            _characterView = value;
-            OnCharacterUpdated();
+            if(_characterView != value)
+            {
+                _characterView = value;
+                OnCharacterUpdated();
+            }
         }
     }
     
@@ -68,6 +71,11 @@ public class CharacterWidget : MonoBehaviour
             if (!string.IsNullOrEmpty(_characterView.imageUrl) && _characterView.imageUrl != currentImageUrl)
             {
                 StartCoroutine(DownloadImage(_characterView.imageUrl));
+            }
+
+            if(characterSheet != null)
+            {
+                characterSheet.Character = _characterView;
             }
         }
     }
