@@ -16,7 +16,7 @@ namespace Beamable.Microservices.ChatRpg.Storage
         private static readonly IEnumerable<CreateIndexModel<CampaignEvent>> _indexes = new CreateIndexModel<CampaignEvent>[]
         {
             new CreateIndexModel<CampaignEvent>(
-                Builders<CampaignEvent>.IndexKeys.Descending(x => x.CampaignName).Descending(x => x.CreatedAt),
+                Builders<CampaignEvent>.IndexKeys.Ascending(x => x.CampaignName).Ascending(x => x.CreatedAt),
                 new CreateIndexOptions { Unique = true }
             )
         };
@@ -35,13 +35,13 @@ namespace Beamable.Microservices.ChatRpg.Storage
             return _collection;
         }
 
-        public static async Task<List<CampaignEvent>> GetOrderedCampaignEvents(IMongoDatabase db, string campaignName)
+        public static async Task<List<CampaignEvent>> GetAscendingCampaignEvents(IMongoDatabase db, string campaignName)
         {
             var collection = await Get(db);
             var query = Builders<CampaignEvent>.Filter.Eq(x => x.CampaignName, campaignName);
             var results = await collection.Find(query).ToListAsync();
 
-            return results.OrderByDescending(x => x.CreatedAt).ToList();
+            return results.OrderBy(x => x.CreatedAt).ToList();
         }
 
         public static async Task<bool> Insert(IMongoDatabase db, CampaignEvent campaignEvent)

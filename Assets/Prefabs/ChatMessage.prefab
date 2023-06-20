@@ -94,7 +94,7 @@ GameObject:
   - component: {fileID: 7860427447377345090}
   - component: {fileID: 4659380263071984803}
   m_Layer: 5
-  m_Name: Message
+  m_Name: ChatMessage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -182,7 +182,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 140, y: 0}
-  m_SizeDelta: {x: 850, y: 0}
+  m_SizeDelta: {x: 800, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &7860189959239319124
 CanvasRenderer:

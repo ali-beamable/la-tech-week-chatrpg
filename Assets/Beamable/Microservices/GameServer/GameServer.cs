@@ -228,7 +228,7 @@ namespace Beamable.Microservices
             var db = await Storage.GameDatabaseDatabase();
             var campaignName = "DefaultCampaign";
             var character = await GetCharacter(campaignName, Context.UserId);
-			var campaignEvents = await CampaignEventsCollection.GetOrderedCampaignEvents(db, campaignName);
+			var campaignEvents = await CampaignEventsCollection.GetAscendingCampaignEvents(db, campaignName);
 
 			var newCampaign = campaignEvents.Count == 0;
             var prompt = promptService.AdventurePromptV2(character, campaignEvents);
@@ -259,7 +259,7 @@ namespace Beamable.Microservices
 			}
 			else
             {
-				campaignEvent.SkyboxUrl = campaignEvents.First().SkyboxUrl;
+				campaignEvent.SkyboxUrl = campaignEvents.Last().SkyboxUrl;
             }
 
             var worldState = campaignEvent.ToWorldState();
@@ -270,7 +270,7 @@ namespace Beamable.Microservices
         }
 
         [ClientCallable("adventure/play")]
-        public async Task<WorldState> Play(string playerAction)
+        public async Task<WorldState> Play(AdventurePlayRequest request)
         {
             var claude = Provider.GetService<Claude>();
             var promptService = Provider.GetService<PromptService>();
@@ -278,10 +278,10 @@ namespace Beamable.Microservices
             var db = await Storage.GameDatabaseDatabase();
             var campaignName = "DefaultCampaign";
 			var character = await GetCharacter(campaignName, Context.UserId);
-			var campaignEvents = await CampaignEventsCollection.GetOrderedCampaignEvents(db, campaignName);
+			var campaignEvents = await CampaignEventsCollection.GetAscendingCampaignEvents(db, campaignName);
 
 			var prompt = promptService.AdventurePromptV2(character, campaignEvents);
-			prompt += $"\n\n[{character.Name}]: {playerAction}";
+			prompt += $"\n\n[{character.Name}]: {request.playerAction}";
             var response = await claude.Send(new ClaudeCompletionRequest
             {
                 Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
@@ -323,7 +323,7 @@ namespace Beamable.Microservices
 
 			// Get Embeddings
 			var openAI = Provider.GetService<OpenAI_API>();
-			var embeddingsContent = $"{skyboxStyle}: {prompt}";
+			var embeddingsContent = $"{skyboxStyle}: {campaignEvent.Description}";
 			var embeddingsVector = await openAI.GetEmbeddings(embeddingsContent);
 
 			var insertedSkybox = await BlockadeSkyboxesCollection.Insert(db, new BlockadeSkybox

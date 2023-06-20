@@ -71,11 +71,11 @@ namespace Beamable.Server.Clients
         /// Call the Play method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.Play"/>
         /// </summary>
-        public Beamable.Common.Promise<WorldState> Play(string playerAction)
+        public Beamable.Common.Promise<WorldState> Play(AdventurePlayRequest request)
         {
-            string serialized_playerAction = this.SerializeArgument<string>(playerAction);
+            string serialized_request = this.SerializeArgument<AdventurePlayRequest>(request);
             string[] serializedFields = new string[] {
-                    serialized_playerAction};
+                    serialized_request};
             return this.Request<WorldState>("GameServer", "adventure/play", serializedFields);
         }
         
@@ -121,6 +121,11 @@ namespace Beamable.Server.Clients
         
         [System.SerializableAttribute()]
         internal sealed class ParameterSystem_String : MicroserviceClientDataWrapper<string>
+        {
+        }
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterAdventurePlayRequest : MicroserviceClientDataWrapper<AdventurePlayRequest>
         {
         }
     }

@@ -40,10 +40,10 @@ In this package, you are to include some specific tags every time you generate a
 1. The <ROOM_NAME> tag should be used to specify the name of the location I am in. 
 2. The <CHARACTERS> tag should be used to specify a comma-delimited list of Non-Player Characters in the current location.
 3. The <ITEMS> tag should be used to specify a comma-delimited list of interactable items in the current location. 
-4. The <STORY> tag should contain the long-form narrative response that explains what is going on in the story and should *always* be in the third person (e.g. Elrond played the Lute).
+4. The <STORY> tag should contain the narrative response that explains what is going on in the story and should *always* be in the third person (e.g. Elrond played the Lute).
 5. The <DESCRIPTION> tag should provide a brief description of the environment (up to 200 characters). 
 6. The <MUSIC> tag should provide a mood music that is appropriate for the scene (your choices are limited to: “exploration”, “battle”, “chill”)
-7. The <DM> tag should contain any feedback, questions, comments, explanations, or suggestions you have for the player in your capacity as Dungeon Master, addressed in the first person.";
+7. The <DM> is tag is *optional*, and should contain any feedback, questions, comments, explanations, or suggestions you have for the player in your capacity as Dungeon Master, addressed in the first person as succinctly as possible.";
 
 	public const string DefaultCampaignPrompt = @"Here are the details of the campaign setting we will be in:
 
@@ -60,7 +60,7 @@ Inside the village are several resources available the players. There is a taver
 		if (campaignEvents.Count > 0)
 		{
 			string campaignEventsNarrative = string.Join("\n", campaignEvents.Select(x => x.Story));
-			var mostRecentEvent = campaignEvents.First();
+			var mostRecentEvent = campaignEvents.Last();
 			prompt += @$"
 <ROOM_NAME>{mostRecentEvent.RoomName}</ROOM_NAME>
 <DESCRIPTION>{mostRecentEvent.Description}</DESCRIPTION>
@@ -70,7 +70,7 @@ Inside the village are several resources available the players. There is a taver
 <STORY>{campaignEventsNarrative}</STORY>";
         }
 
-		prompt += "\n\nRemember to include *all* the XML tags outlined in the rules in your response.";
+		prompt += "\n\nRemember to include *all* the XML tags outlined in the rules in your response and to keep the <STORY> tag in narrative form.";
 
         return prompt;
 	}

@@ -13,8 +13,10 @@ public class AdventureManager : MonoBehaviour
     public GameObject chatMessagePrefab;
     public GameObject narrativeMessagePrefab;
     public GameObject chatScrollView;
+    public GameObject storyScrollView;
     public InputField chatInputField;
-    
+    public TMPro.TMP_Text roomText;
+
     public BlockadeLabsSkybox blockadeSkybox;
 
     [SerializeField] private CharacterView _characterView;
@@ -25,20 +27,16 @@ public class AdventureManager : MonoBehaviour
         var chatInput = chatInputField.text;
         chatInputField.text = "";
 
-        var newMessage = Instantiate(chatMessagePrefab, chatScrollView.transform);
-        var chatMessage = newMessage.GetComponent<ChatMessage>();
-        chatMessage.messageAuthor.text = $"{_characterView.characterName}:";
-        chatMessage.messageBody.text = chatInput;
-
-        RefreshScrollView();
+        InsertChatMessage($"[{_characterView.characterName}]:", chatInput);
 
         await BeamContext.Default.Microservices().GameServer()
-            .Play(chatInput);
+            .Play(new AdventurePlayRequest { playerAction = chatInput });
     }
 
     async void Start()
     {
         RemoveAllChildren(chatScrollView);
+        RemoveAllChildren(storyScrollView);
 
         var beamContext = BeamContext.Default;
         await beamContext.OnReady;
@@ -80,14 +78,19 @@ public class AdventureManager : MonoBehaviour
                 LoadSkyboxFromUrl(worldState.skyboxUrl);
             }
 
-            if(!string.IsNullOrEmpty(worldState.story))
+            if(!string.IsNullOrEmpty(worldState.story) && worldState.story != _worldState.story)
             {
-                InsertChatMessage("[Story]:", worldState.story);
+                InsertStoryMessage(worldState.story);
             }
 
-            if (!string.IsNullOrEmpty(worldState.dm))
+            if (!string.IsNullOrEmpty(worldState.dm) && worldState.dm != _worldState.dm)
             {
                 InsertChatMessage("[DM]:", worldState.dm);
+            }
+
+            if(!string.IsNullOrEmpty(worldState.roomName))
+            {
+                roomText.text = worldState.roomName;
             }
 
             //TODO: Simplify, ideally should inject a World State service of some kind that is observable
@@ -120,7 +123,16 @@ public class AdventureManager : MonoBehaviour
         chatMessage.messageAuthor.text = author;
         chatMessage.messageBody.text = body;
 
-        StartCoroutine(RefreshScrollView());
+        StartCoroutine(RefreshScrollView(chatScrollView));
+    }
+
+    void InsertStoryMessage(string body)
+    {
+        var newMessage = Instantiate(narrativeMessagePrefab, storyScrollView.transform);
+        var storyMessage = newMessage.GetComponent<ChatMessage>();
+        storyMessage.messageBody.text = body;
+
+        StartCoroutine(RefreshScrollView(storyScrollView));
     }
 
     async void LoadSkyboxFromUrl(string skyboxUrl)
@@ -152,12 +164,12 @@ public class AdventureManager : MonoBehaviour
         }
     }
 
-    IEnumerator RefreshScrollView()
+    IEnumerator RefreshScrollView(GameObject scrollView)
     {
         // Wait a frame
         yield return 0;
 
-        var rectTransforms = chatScrollView.GetComponentsInChildren<RectTransform>();
+        var rectTransforms = scrollView.GetComponentsInChildren<RectTransform>();
         foreach (var rectTransform in rectTransforms)
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);

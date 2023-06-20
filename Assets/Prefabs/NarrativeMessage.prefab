@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &6571966335332393354
+--- !u!1 &1764351759310311255
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,59 +8,59 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 7087984585240164258}
-  - component: {fileID: 5325129498379066839}
-  - component: {fileID: 3109326510993812253}
-  - component: {fileID: 248900423331486022}
-  m_Layer: 0
+  - component: {fileID: 1973816441004125047}
+  - component: {fileID: 1976678450505863423}
+  - component: {fileID: 1864814669277995401}
+  - component: {fileID: 6800346401799028035}
+  m_Layer: 5
   m_Name: Message
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &7087984585240164258
+--- !u!224 &1973816441004125047
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6571966335332393354}
+  m_GameObject: {fileID: 1764351759310311255}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1.00008, y: 1.00008, z: 1.00008}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 5309843900554604747}
+  m_Father: {fileID: 1974238141685225249}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: -0.000030517578, y: 0}
-  m_SizeDelta: {x: 983.92, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 800, y: 0}
   m_Pivot: {x: 0, y: 1}
---- !u!222 &5325129498379066839
+--- !u!222 &1976678450505863423
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6571966335332393354}
+  m_GameObject: {fileID: 1764351759310311255}
   m_CullTransparentMesh: 1
---- !u!114 &3109326510993812253
+--- !u!114 &1864814669277995401
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6571966335332393354}
+  m_GameObject: {fileID: 1764351759310311255}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.52156866, g: 0.5318791, b: 0.75686276, a: 1}
+  m_Color: {r: 0.52156866, g: 0.6801505, b: 0.75686276, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -70,7 +70,7 @@ MonoBehaviour:
   m_FontData:
     m_Font: {fileID: 12800000, guid: 7dfe11779d7aca2458cc455ac095a5f4, type: 3}
     m_FontSize: 28
-    m_FontStyle: 2
+    m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 2
     m_MaxSize: 40
@@ -83,13 +83,13 @@ MonoBehaviour:
   m_Text: 'raid with him
 
 '
---- !u!114 &248900423331486022
+--- !u!114 &6800346401799028035
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6571966335332393354}
+  m_GameObject: {fileID: 1764351759310311255}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
@@ -97,7 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 2
---- !u!1 &8046730860655114097
+--- !u!1 &1765385046406357667
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -105,57 +105,57 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5309843900554604747}
-  - component: {fileID: 2564117083962492699}
-  - component: {fileID: 5126146302905603064}
-  m_Layer: 0
+  - component: {fileID: 1974238141685225249}
+  - component: {fileID: 1976599274866562281}
+  - component: {fileID: 3950468472567251464}
+  m_Layer: 5
   m_Name: NarrativeMessage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &5309843900554604747
+--- !u!224 &1974238141685225249
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8046730860655114097}
+  m_GameObject: {fileID: 1765385046406357667}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 7087984585240164258}
+  - {fileID: 1973816441004125047}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 629.99994, y: -716.4503}
-  m_SizeDelta: {x: 984, y: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
---- !u!222 &2564117083962492699
+--- !u!222 &1976599274866562281
 CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8046730860655114097}
+  m_GameObject: {fileID: 1765385046406357667}
   m_CullTransparentMesh: 1
---- !u!114 &5126146302905603064
+--- !u!114 &3950468472567251464
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8046730860655114097}
+  m_GameObject: {fileID: 1765385046406357667}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1976c57e1c0b4425a80e28faef64590, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   messageAuthor: {fileID: 0}
-  messageBody: {fileID: 3109326510993812253}
-  myRectTransform: {fileID: 5309843900554604747}
+  messageBody: {fileID: 1864814669277995401}
+  myRectTransform: {fileID: 1974238141685225249}
