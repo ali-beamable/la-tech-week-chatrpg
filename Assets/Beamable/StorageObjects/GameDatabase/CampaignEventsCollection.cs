@@ -16,8 +16,7 @@ namespace Beamable.Microservices.ChatRpg.Storage
         private static readonly IEnumerable<CreateIndexModel<CampaignEvent>> _indexes = new CreateIndexModel<CampaignEvent>[]
         {
             new CreateIndexModel<CampaignEvent>(
-                Builders<CampaignEvent>.IndexKeys.Ascending(x => x.CampaignName).Ascending(x => x.CreatedAt),
-                new CreateIndexOptions { Unique = true }
+                Builders<CampaignEvent>.IndexKeys.Ascending(x => x.CampaignName).Ascending(x => x.CreatedAt)
             )
         };
 
@@ -26,7 +25,7 @@ namespace Beamable.Microservices.ChatRpg.Storage
             if (_collection is null)
             {
                 _collection = db.GetCollection<CampaignEvent>(_collectionName);
-                if (_indexes.Count() > 0)
+                if (_indexes.Any())
                 {
                     await _collection.Indexes.CreateManyAsync(_indexes);
                 }

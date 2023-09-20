@@ -17,10 +17,6 @@ namespace Beamable.Microservices.ChatRpg.Storage
         {
             new CreateIndexModel<CampaignCharacter>(
                 Builders<CampaignCharacter>.IndexKeys.Hashed(x => x.Name)
-            ),
-            new CreateIndexModel<CampaignCharacter>(
-                Builders<CampaignCharacter>.IndexKeys.Descending(x => x.CampaignName).Descending(x => x.PlayerId),
-                new CreateIndexOptions { Unique = true }
             )
         };
 
@@ -88,13 +84,8 @@ namespace Beamable.Microservices.ChatRpg.Storage
     public record CampaignCharacter
     {
         [BsonElement("_id")]
-        public ObjectId Id { get; set; } = ObjectId.GenerateNewId();
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-        
-        public string CampaignName { get; set; }
         public string PlayerId { get; set; }
-        
+        public string CampaignName { get; set; }
         public string Name { get; set; }
         public string Class { get; set; }
         public string Description { get; set; }
@@ -118,6 +109,8 @@ namespace Beamable.Microservices.ChatRpg.Storage
         /* Generated from Scenario and BlockadeLabs respectively */
         public string PortraitUrl { get; set; }
         public string SkyboxUrl { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         public CharacterView ToCharacterView()
         {

@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Xml;
 using Anthropic;
+using Beamable.Common.Scheduler;
 using Beamable.Microservices.ChatRpg.Storage;
 using Beamable.Server;
+using Beamable.StorageObjects.GameDatabase;
 using BlockadeLabs;
 using OpenAI;
 using Unity.Plastic.Newtonsoft.Json;
@@ -19,16 +22,20 @@ namespace Beamable.Microservices
 		[ConfigureServices]
 		public static void Configure(IServiceBuilder builder)
 		{
-			// Singleton
+			// Services
+			builder.Builder.AddSingleton(p => new HttpClient());
 			builder.Builder.AddSingleton<Config>();
+			builder.Builder.AddSingleton<PromptService>();
 			builder.Builder.AddSingleton<Scenario>();
 			builder.Builder.AddSingleton<SkyboxApi>();
-			builder.Builder.AddSingleton(p => new HttpClient());
+			builder.Builder.AddSingleton<Claude>();
+			builder.Builder.AddSingleton<OpenAI_API>();
+
+			// Collections
+			builder.Builder.AddSingleton<BlockadeSkyboxesCollectionV2>();
 			
-			// Scoped
-			builder.Builder.AddScoped<Claude>();
-			builder.Builder.AddScoped<OpenAI_API>();
-			builder.Builder.AddScoped<PromptService>();
+			// Only if using custom atlas database
+			builder.Builder.ReplaceSingleton<IStorageObjectConnectionProvider, AtlasStorageConnectionProvider>();
 		}
 		
 		[InitializeServices]
@@ -36,6 +43,9 @@ namespace Beamable.Microservices
 		{
 			var config = init.GetService<Config>();
 			await config.Init();
+			
+			// Create Indexes
+			await init.GetService<BlockadeSkyboxesCollectionV2>().EnsureIndexes();
 		}
 
 		private async Task<CampaignCharacter> GetCharacter(string campaignName, long playerId)
@@ -112,7 +122,7 @@ namespace Beamable.Microservices
 			var claudeResponse = await claude.Send(new ClaudeCompletionRequest
 			{
 				Prompt = $"\n\nHuman: {characterPrompt}\n\nAssistant:",
-				Model = ClaudeModels.ClaudeInstantV1_1_100k,
+				Model = ClaudeModels.ClaudeInstantLatestV1,
 				MaxTokensToSample = 100000
 			});
 
@@ -246,7 +256,7 @@ namespace Beamable.Microservices
             var response = await claude.Send(new ClaudeCompletionRequest
             {
                 Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
-                Model = ClaudeModels.ClaudeV1_3_100k,
+                Model = ClaudeModels.ClaudeInstantLatestV1,
                 MaxTokensToSample = 100000
             });
 
@@ -286,7 +296,7 @@ namespace Beamable.Microservices
             var response = await claude.Send(new ClaudeCompletionRequest
             {
                 Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
-                Model = ClaudeModels.ClaudeV1_3_100k,
+                Model = ClaudeModels.ClaudeInstantLatestV1,
                 MaxTokensToSample = 100000
             });
 
@@ -301,19 +311,50 @@ namespace Beamable.Microservices
             await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
 
 			//Update Skybox
-			//TODO: Search Vector Database first
+			Debug.Log("Searching Skybox...");
 			var skyboxStyle = SkyboxStyles.FANTASY_LAND;
 			var blockade = Provider.GetService<SkyboxApi>();
+			
+			// Get Embeddings
+			var openAI = Provider.GetService<OpenAI_API>();
+			var skyboxEmbeddingsVector = await openAI.GetEmbeddings(campaignEvent.Description);
 
-			Debug.Log("Creating Skybox...");
-			var inferenceRsp = await blockade.CreateSkybox(skyboxStyle, campaignEvent.Description);
-			if (!inferenceRsp.IsCompleted)
+			string skyboxUrl;
+			var skyboxSearchResults = await BlockadeSkyboxesCollection.VectorSearch(db, skyboxEmbeddingsVector, 0.96);
+			if (skyboxSearchResults.Count > 0)
 			{
-				Debug.Log("Polling skybox for completion...");
-				var rsp = await blockade.PollSkyboxToCompletion(inferenceRsp.Id.Value);
-				inferenceRsp = rsp.Request;
+				Debug.Log("Found Skybox with sufficient score.");
+				skyboxUrl = skyboxSearchResults.OrderByDescending(skybox => skybox.Score).First().FileUrl;
 			}
-			campaignEvent.SkyboxUrl = inferenceRsp.FileUrl;
+			else
+			{
+				Debug.Log("Creating Skybox...");
+				var inferenceRsp = await blockade.CreateSkybox(skyboxStyle, campaignEvent.Description);
+				if (!inferenceRsp.IsCompleted)
+				{
+					Debug.Log("Polling skybox for completion...");
+					var rsp = await blockade.PollSkyboxToCompletion(inferenceRsp.Id.Value);
+					inferenceRsp = rsp.Request;
+				}
+				
+				var insertedSkybox = await BlockadeSkyboxesCollection.Insert(db, new BlockadeSkybox
+				{
+					StyleId = (int)skyboxStyle,
+					StyleName = skyboxStyle.ToString(),
+					Prompt = campaignEvent.Description,
+					FileUrl = inferenceRsp.FileUrl,
+					DepthMapUrl = inferenceRsp.DepthMapUrl,
+					ThumbUrl = inferenceRsp.ThumbUrl,
+					Embedding = skyboxEmbeddingsVector
+				});
+
+				if (!insertedSkybox)
+					throw new MicroserviceException(500, "FailedToSaveSkybox", "Failed to save skybox to the database.");
+
+				skyboxUrl = inferenceRsp.FileUrl;
+			}
+			
+			campaignEvent.SkyboxUrl = skyboxUrl;
 			var updated = await CampaignEventsCollection.Replace(db, campaignEvent);
 			if (!updated)
 				throw new MicroserviceException(500, "FailedToUpdateCampaignEvent", "Failed to update campaign event skybox in the database.");
@@ -321,26 +362,6 @@ namespace Beamable.Microservices
 			worldState = campaignEvent.ToWorldState();
 			worldJson = JsonConvert.SerializeObject(worldState);
 			await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
-
-			// Get Embeddings
-			var openAI = Provider.GetService<OpenAI_API>();
-			var embeddingsContent = $"{skyboxStyle}: {campaignEvent.Description}";
-			var embeddingsVector = await openAI.GetEmbeddings(embeddingsContent);
-
-			var insertedSkybox = await BlockadeSkyboxesCollection.Insert(db, new BlockadeSkybox
-			{
-				StyleId = (int)skyboxStyle,
-				StyleName = skyboxStyle.ToString(),
-				Prompt = campaignEvent.Description,
-				FileUrl = inferenceRsp.FileUrl,
-				DepthMapUrl = inferenceRsp.DepthMapUrl,
-				ThumbUrl = inferenceRsp.ThumbUrl,
-				Content = embeddingsContent,
-				Embedding = embeddingsVector
-			});
-
-			if (!insertedSkybox)
-				throw new MicroserviceException(500, "FailedToSaveSkybox", "Failed to save skybox to the database.");
 
 			return worldState;
         }
@@ -353,7 +374,7 @@ namespace Beamable.Microservices
 			var response = await claude.Send(new ClaudeCompletionRequest
 			{
 				Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
-				Model = ClaudeModels.ClaudeV1_3_100k,
+				Model = ClaudeModels.ClaudeInstantLatestV1,
 				MaxTokensToSample = 100000
 			});
 
@@ -382,8 +403,21 @@ namespace Beamable.Microservices
 		}
 
 		[ClientCallable("blockade")]
-		public async Task<string> TestBlockade(string prompt)
+		public async Task<string> TestBlockade(string prompt, float[] vector)
 		{
+			var blockadeCollection = Provider.GetService<BlockadeSkyboxesCollectionV2>();
+			var db = await Storage.GameDatabaseDatabase();
+			List<BlockadeSkybox> result;
+			try
+			{
+				result = await blockadeCollection.VectorSearch(vector, 50);
+			}
+			catch (Exception ex)
+			{
+				Debug.LogException(ex);
+				throw ex;
+			}
+
 			var skyboxStyle = SkyboxStyles.FANTASY_LAND;
 			var blockade = Provider.GetService<SkyboxApi>();
 			
@@ -401,10 +435,8 @@ namespace Beamable.Microservices
 
 			// Get Embeddings
 			var openAI = Provider.GetService<OpenAI_API>();
-			var embeddingsContent = $"{skyboxStyle.ToString()}: {prompt}";
-			var embeddingsVector = await openAI.GetEmbeddings(embeddingsContent);
+			var embeddingsVector = await openAI.GetEmbeddings(prompt);
 			
-			var db = await Storage.GameDatabaseDatabase();
 			var inserted = await BlockadeSkyboxesCollection.Insert(db, new BlockadeSkybox
 			{
 				StyleId = (int)skyboxStyle,
@@ -413,7 +445,6 @@ namespace Beamable.Microservices
 				FileUrl = inferenceRsp.FileUrl,
 				DepthMapUrl = inferenceRsp.DepthMapUrl,
 				ThumbUrl = inferenceRsp.ThumbUrl,
-				Content = embeddingsContent,
 				Embedding = embeddingsVector
 			});
 
@@ -423,6 +454,34 @@ namespace Beamable.Microservices
 			}
 			
 			return inferenceRsp.FileUrl;
+		}
+
+		[ClientCallable]
+		public async Task<Job> TestScheduler()
+		{
+			try
+			{
+				var job = await Services.Scheduler.Schedule()
+					.Microservice<GameServer>(useLocal: true)
+					.Run(t => t.DelayedTask)
+					.After(TimeSpan.FromSeconds(10))
+					.Save("test");
+				
+				return job;
+			}
+			catch (Exception ex)
+			{
+				Debug.LogError(ex);
+				throw ex;
+			}
+		}
+
+		[Callable]
+		public async Task DelayedTask()
+		{
+			Debug.Log("Delayed Task Executing...");
+			await Task.Delay(30000);
+			Debug.Log("Delayed Task Completed.");
 		}
 	}
 }

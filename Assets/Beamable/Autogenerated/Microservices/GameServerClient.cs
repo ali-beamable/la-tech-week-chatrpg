@@ -37,13 +37,13 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<CharacterView> NewCharacter(string card1, string card2, string card3)
         {
-            string serialized_card1 = this.SerializeArgument<string>(card1);
-            string serialized_card2 = this.SerializeArgument<string>(card2);
-            string serialized_card3 = this.SerializeArgument<string>(card3);
-            string[] serializedFields = new string[] {
-                    serialized_card1,
-                    serialized_card2,
-                    serialized_card3};
+            object raw_card1 = card1;
+            object raw_card2 = card2;
+            object raw_card3 = card3;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("card1", raw_card1);
+            serializedFields.Add("card2", raw_card2);
+            serializedFields.Add("card3", raw_card3);
             return this.Request<CharacterView>("GameServer", "character/new", serializedFields);
         }
         
@@ -53,7 +53,7 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<CharacterView> GetCharacter()
         {
-            string[] serializedFields = new string[0];
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
             return this.Request<CharacterView>("GameServer", "character/get", serializedFields);
         }
         
@@ -63,7 +63,7 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<WorldState> Ready()
         {
-            string[] serializedFields = new string[0];
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
             return this.Request<WorldState>("GameServer", "adventure/ready", serializedFields);
         }
         
@@ -73,9 +73,9 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<WorldState> Play(AdventurePlayRequest request)
         {
-            string serialized_request = this.SerializeArgument<AdventurePlayRequest>(request);
-            string[] serializedFields = new string[] {
-                    serialized_request};
+            object raw_request = request;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("request", raw_request);
             return this.Request<WorldState>("GameServer", "adventure/play", serializedFields);
         }
         
@@ -85,9 +85,9 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<string> TestClaude(string prompt)
         {
-            string serialized_prompt = this.SerializeArgument<string>(prompt);
-            string[] serializedFields = new string[] {
-                    serialized_prompt};
+            object raw_prompt = prompt;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("prompt", raw_prompt);
             return this.Request<string>("GameServer", "claude", serializedFields);
         }
         
@@ -97,9 +97,9 @@ namespace Beamable.Server.Clients
         /// </summary>
         public Beamable.Common.Promise<string> TestScenario(string prompt)
         {
-            string serialized_prompt = this.SerializeArgument<string>(prompt);
-            string[] serializedFields = new string[] {
-                    serialized_prompt};
+            object raw_prompt = prompt;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("prompt", raw_prompt);
             return this.Request<string>("GameServer", "scenario", serializedFields);
         }
         
@@ -107,12 +107,34 @@ namespace Beamable.Server.Clients
         /// Call the TestBlockade method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.TestBlockade"/>
         /// </summary>
-        public Beamable.Common.Promise<string> TestBlockade(string prompt)
+        public Beamable.Common.Promise<string> TestBlockade(string prompt, float[] vector)
         {
-            string serialized_prompt = this.SerializeArgument<string>(prompt);
-            string[] serializedFields = new string[] {
-                    serialized_prompt};
+            object raw_prompt = prompt;
+            object raw_vector = vector;
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            serializedFields.Add("prompt", raw_prompt);
+            serializedFields.Add("vector", raw_vector);
             return this.Request<string>("GameServer", "blockade", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the TestScheduler method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.TestScheduler"/>
+        /// </summary>
+        public Beamable.Common.Promise<Beamable.Common.Scheduler.Job> TestScheduler()
+        {
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            return this.Request<Beamable.Common.Scheduler.Job>("GameServer", "TestScheduler", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the DelayedTask method on the GameServer microservice
+        /// <see cref="Beamable.Microservices.GameServer.DelayedTask"/>
+        /// </summary>
+        public Beamable.Common.Promise<System.Threading.Tasks.Task> DelayedTask()
+        {
+            System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
+            return this.Request<System.Threading.Tasks.Task>("GameServer", "DelayedTask", serializedFields);
         }
     }
     
@@ -126,6 +148,11 @@ namespace Beamable.Server.Clients
         
         [System.SerializableAttribute()]
         internal sealed class ParameterAdventurePlayRequest : MicroserviceClientDataWrapper<AdventurePlayRequest>
+        {
+        }
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterSystem_Array_System_Single : MicroserviceClientDataWrapper<float[]>
         {
         }
     }

@@ -91,6 +91,12 @@ namespace Anthropic
 
     public static class ClaudeModels
     {
+        // Claude: superior performance on tasks that require complex reasoning
+        public const string ClaudeLatestV2 = "claude-2";
+        
+        // Claude Instant: low-latency, high throughput
+        public const string ClaudeInstantLatestV1 = "claude-instant-1";
+
         // Our largest model, ideal for a wide range of more complex tasks.
         public static readonly string ClaudeV1 = "claude-v1";
 
