@@ -2,59 +2,36 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using System.Linq;
-using MongoDB.Bson;
+using Beamable.Server;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Beamable.Microservices.ChatRpg.Storage
+namespace Beamable.StorageObjects.GameDatabase
 {
-	public static class CampaignCharacterCollection
+    public class CampaignCharacterCollection : MongoCollection<Server.GameDatabase, CampaignCharacter>
     {
-        private static readonly string _collectionName = "campaign.characters";
-
-        private static IMongoCollection<CampaignCharacter> _collection;
-        private static readonly IEnumerable<CreateIndexModel<CampaignCharacter>> _indexes = new CreateIndexModel<CampaignCharacter>[]
+        protected override string CollectionName => "campaign.characters";
+        protected override IEnumerable<CreateIndexModel<CampaignCharacter>> Indexes => new []
         {
             new CreateIndexModel<CampaignCharacter>(
-                Builders<CampaignCharacter>.IndexKeys.Hashed(x => x.Name)
+                Builders<CampaignCharacter>.IndexKeys.Ascending(x => x.CampaignName).Ascending(x => x.PlayerId)
             )
         };
 
-        public static async ValueTask<IMongoCollection<CampaignCharacter>> Get(IMongoDatabase db)
-        {
-            if (_collection is null)
-            {
-                _collection = db.GetCollection<CampaignCharacter>(_collectionName);
-                if(_indexes.Count() > 0) { 
-                    await _collection.Indexes.CreateManyAsync(_indexes);
-                }
-            }
-
-            return _collection;
-        }
+        public CampaignCharacterCollection(IStorageObjectConnectionProvider connectionProvider) : base(connectionProvider){}
         
-        public static async Task<List<CampaignCharacter>> GetCharacters(IMongoDatabase db, string campaignName, string playerId)
+        public async Task<List<CampaignCharacter>> GetCharacters(string campaignName, string playerId)
         {
-            var collection = await Get(db);
+            var collection = await GetCollection();
             var query = Builders<CampaignCharacter>.Filter.Eq(x => x.CampaignName, campaignName) & 
-                    Builders<CampaignCharacter>.Filter.Eq(x => x.PlayerId, playerId);
-            var results = await collection.Find(query).ToListAsync();
-
-            return results;
-        }
-        
-        public static async Task<List<CampaignCharacter>> GetCharactersByCampaign(IMongoDatabase db, string campaignName)
-        {
-            var collection = await Get(db);
-            var query = Builders<CampaignCharacter>.Filter.Eq(x => x.CampaignName, campaignName);
+                        Builders<CampaignCharacter>.Filter.Eq(x => x.PlayerId, playerId);
             var results = await collection.Find(query).ToListAsync();
 
             return results;
         }
 
-        public static async Task<bool> Insert(IMongoDatabase db, CampaignCharacter character)
+        public async Task<bool> Insert(CampaignCharacter character)
         {
-            var collection = await Get(db);
+            var collection = await GetCollection();
             try
             {
                 await collection.InsertOneAsync(character);
@@ -65,22 +42,8 @@ namespace Beamable.Microservices.ChatRpg.Storage
                 return false;
             }
         }
-
-        public static async Task<bool> Insert(IMongoDatabase db, IEnumerable<CampaignCharacter> characters)
-        {
-            var collection = await Get(db);
-            try
-            {
-                 await collection.InsertManyAsync(characters);
-                return true;
-            }
-            catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
-            {
-                return false;
-            }
-        }
     }
-
+    
     public record CampaignCharacter
     {
         [BsonElement("_id")]

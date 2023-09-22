@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Beamable.Server;
-using Beamable.Server.Api.Notifications;
 using Unity.Plastic.Newtonsoft.Json;
 
 namespace BlockadeLabs

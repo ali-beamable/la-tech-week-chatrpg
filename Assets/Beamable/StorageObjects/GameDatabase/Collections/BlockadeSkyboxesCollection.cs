@@ -1,13 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Beamable.Server;
-using Beamable.StorageObjects.GameDatabase;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 
-namespace Beamable.Microservices.ChatRpg.Storage
+namespace Beamable.StorageObjects.GameDatabase
 {
-    public class BlockadeSkyboxesCollectionV2 : MongoCollection<GameDatabase, BlockadeSkybox>
+    public class BlockadeSkyboxesCollection : MongoCollection<Server.GameDatabase, BlockadeSkybox>
     {
         protected override string CollectionName => "blockadelabs.skyboxes";
         protected override IEnumerable<CreateIndexModel<BlockadeSkybox>> Indexes => new []
@@ -19,17 +20,16 @@ namespace Beamable.Microservices.ChatRpg.Storage
         
         protected override IEnumerable<CreateVectorIndexModel<BlockadeSkybox>> VectorIndexes => new []
         {
-            new CreateVectorIndexModel<BlockadeSkybox>("vector-search-index", x => x.Embedding)
+            new CreateVectorIndexModel<BlockadeSkybox>("skybox-vector-index", x => x.Embedding)
         };
 
-        public BlockadeSkyboxesCollectionV2(IStorageObjectConnectionProvider connectionProvider) : base(connectionProvider)
-        { }
+        public BlockadeSkyboxesCollection(IStorageObjectConnectionProvider connectionProvider) : base(connectionProvider) {}
         
         public async Task<List<BlockadeSkybox>> VectorSearch(float[] query, double scoreCutoff)
         {
             var collection = await GetCollection();
             var knnBeta = new BsonDocument { { "path", "Embedding"}, { "k", 15}, { "vector", new BsonArray(query) } };
-            var searchStage = new BsonDocument { { "index", "vector-search-index" }, { "knnBeta", knnBeta } };
+            var searchStage = new BsonDocument { { "index", "skybox-vector-index" }, { "knnBeta", knnBeta } };
             var projectStage = new BsonDocument { { "embedding", 0 }, { "_id", 0 }, { "score", new BsonDocument("$meta", "searchScore") } };
 
             PipelineDefinition<BlockadeSkybox, BlockadeSkybox> pipeline = new []
@@ -77,5 +77,28 @@ namespace Beamable.Microservices.ChatRpg.Storage
                 return false;
             }
         }
+    }
+    
+    public record BlockadeSkybox
+    {
+        [BsonElement("_id")]
+        public ObjectId Id { get; set; } = ObjectId.GenerateNewId();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /* Skybox Generation Input */
+        public string Prompt { get; set; } = "";
+        public string StyleName { get; set; } = "";
+        public int StyleId { get; set; } = -1;
+        
+        /* Skybox Generation Output */
+        public string FileUrl { get; set; } = "";
+        public string ThumbUrl { get; set; } = "";
+        public string DepthMapUrl { get; set; } = "";
+        
+        /* Vector Search Fields */
+        public float[] Embedding { get; set; } = Array.Empty<float>();
+
+        [BsonElement("score")]
+        public double? Score { get; set; }
     }
 }

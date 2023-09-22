@@ -2,64 +2,58 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using System.Linq;
+using Beamable.Server;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Beamable.Microservices.ChatRpg.Storage
+namespace Beamable.StorageObjects.GameDatabase
 {
-	public static class ScenarioAssetsCollection
+	public class ScenarioPortraitsCollection : MongoCollection<Server.GameDatabase, ScenarioAsset>
     {
-        private static readonly string _collectionName = "scenario.assets";
-
-        private static IMongoCollection<ScenarioAsset> _collection;
-        private static readonly IEnumerable<CreateIndexModel<ScenarioAsset>> _indexes = new CreateIndexModel<ScenarioAsset>[]
+        protected override string CollectionName => "scenario.portraits";
+        protected override IEnumerable<CreateIndexModel<ScenarioAsset>> Indexes => new []
         {
             new CreateIndexModel<ScenarioAsset>(
                 Builders<ScenarioAsset>.IndexKeys.Hashed(x => x.FileUrl)
             )
         };
-
-        public static async ValueTask<IMongoCollection<ScenarioAsset>> Get(IMongoDatabase db)
+        
+        protected override IEnumerable<CreateVectorIndexModel<ScenarioAsset>> VectorIndexes => new []
         {
-            if (_collection is null)
-            {
-                _collection = db.GetCollection<ScenarioAsset>(_collectionName);
-                if(_indexes.Count() > 0) { 
-                    await _collection.Indexes.CreateManyAsync(_indexes);
-                }
-            }
+            new CreateVectorIndexModel<ScenarioAsset>("portraits-vector-index", x => x.Embedding)
+        };
+        
+        public ScenarioPortraitsCollection(IStorageObjectConnectionProvider connectionProvider) : base(connectionProvider){}
 
-            return _collection;
-        }
-
-        public static async Task<List<ScenarioAsset>> VectorSearch(IMongoDatabase db, float[] query)
+        public async Task<List<ScenarioAsset>> VectorSearch(float[] query, double scoreCutoff)
         {
-            var collection = await Get(db);
+            var collection = await GetCollection();
             var knnBeta = new BsonDocument { { "path", "Embedding"}, { "k", 15}, { "vector", new BsonArray(query) } };
-            var searchStage = new BsonDocument { { "index", "embedding" }, { "knnBeta", knnBeta } };
+            var searchStage = new BsonDocument { { "index", "portraits-vector-index" }, { "knnBeta", knnBeta } };
             var projectStage = new BsonDocument { { "embedding", 0 }, { "_id", 0 }, { "score", new BsonDocument("$meta", "searchScore") } };
 
-            PipelineDefinition<ScenarioAsset, ScenarioAsset> pipeline = new BsonDocument[]
+            PipelineDefinition<ScenarioAsset, ScenarioAsset> pipeline = new []
             {
                 new BsonDocument("$search",  searchStage),
                 new BsonDocument("$project",  projectStage)
             };
 
-            return await collection.Aggregate(pipeline).ToListAsync();
+            var result = await collection.Aggregate(pipeline).ToListAsync();
+            var filteredResult = result.FindAll(skybox => skybox.Score >= scoreCutoff);
+            return filteredResult;
         }
 
-        public static async Task<bool> DeleteAll(IMongoDatabase db)
+        public async Task<bool> DeleteAll()
         {
-            var collection = await Get(db);
+            var collection = await GetCollection();
             var result = await collection.DeleteManyAsync(new BsonDocument());
 
             return result.IsAcknowledged;
         }
 
-        public static async Task<bool> Insert(IMongoDatabase db, ScenarioAsset asset)
+        public async Task<bool> Insert(ScenarioAsset asset)
         {
-            var collection = await Get(db);
+            var collection = await GetCollection();
             try
             {
                 await collection.InsertOneAsync(asset);
@@ -71,9 +65,9 @@ namespace Beamable.Microservices.ChatRpg.Storage
             }
         }
 
-        public static async Task<bool> Insert(IMongoDatabase db, IEnumerable<ScenarioAsset> assets)
+        public async Task<bool> Insert(IEnumerable<ScenarioAsset> assets)
         {
-            var collection = await Get(db);
+            var collection = await GetCollection();
             try
             {
                  await collection.InsertManyAsync(assets);
@@ -85,7 +79,7 @@ namespace Beamable.Microservices.ChatRpg.Storage
             }
         }
     }
-
+    
     public record ScenarioAsset
     {
         [BsonElement("_id")]

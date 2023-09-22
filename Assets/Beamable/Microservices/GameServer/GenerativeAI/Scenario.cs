@@ -1,76 +1,77 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Unity.Plastic.Newtonsoft.Json;
 
-public class Scenario
+namespace Scenario
 {
-    private readonly string _url = "https://api.cloud.scenario.com/v1";
-    private readonly HttpClient _client;
-    private readonly Config _config;
-
-    public Scenario(HttpClient client, Config config)
+    public class ScenarioApi
     {
-        _client = client;
-        _config = config;
-    }
+        private readonly string _url = "https://api.cloud.scenario.com/v1";
+        private readonly HttpClient _client;
+        private readonly Config _config;
 
-    public async Task<InferenceResponse> CreateInference(string model, string prompt)
-    {
-        var requestBody = new CreateInferenceRequest
+        public ScenarioApi(HttpClient client, Config config)
         {
-            parameters = new InferenceParameters
-            {
-                prompt = prompt
-            }
-        };
-        var requestPayload = JsonConvert.SerializeObject(requestBody);
-        var req = new HttpRequestMessage(HttpMethod.Post, $"{_url}/models/{model}/inferences");
-        req.Content = new StringContent(requestPayload, Encoding.UTF8, "application/json");
-        req.Headers.Add("Authorization", $"Basic {_config.ScenarioApiKey}");
-
-        var response = await _client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-        var responseJson = await response.Content.ReadAsStringAsync();
-        var completionResponse = JsonConvert.DeserializeObject<InferenceResponse>(responseJson);
-        
-        return completionResponse;
-    }
-
-    public async Task<InferenceResponse> GetInference(string model, string inferenceId)
-    {
-        var req = new HttpRequestMessage(HttpMethod.Get, $"{_url}/models/{model}/inferences/{inferenceId}");
-        req.Headers.Add("Authorization", $"Basic {_config.ScenarioApiKey}");
-        
-        var response = await _client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-        var responseJson = await response.Content.ReadAsStringAsync();
-        var completionResponse = JsonConvert.DeserializeObject<InferenceResponse>(responseJson);
-        return completionResponse;
-    }
-
-    public async Task<InferenceResponse> PollInferenceToCompletion(string model, string inferenceId)
-    {
-        int pollCount = 0;
-        bool completed = false;
-        InferenceResponse updatedInference = null;
-        while (!completed)
-        {
-            // Wait 1 second before polling again
-            await Task.Delay(1000);
-
-            updatedInference = await GetInference(model, inferenceId);
-            completed = updatedInference.inference.IsCompleted;
-            pollCount += 1;
-
-            if (pollCount >= 300 && !completed)
-            {
-                throw new Exception("Polling timed out after 10 attempts.");
-            }
+            _client = client;
+            _config = config;
         }
 
-        return updatedInference;
+        public async Task<InferenceResponse> CreateInference(string model, string prompt)
+        {
+            var requestBody = new CreateInferenceRequest
+            {
+                parameters = new InferenceParameters
+                {
+                    prompt = prompt
+                }
+            };
+            var requestPayload = JsonConvert.SerializeObject(requestBody);
+            var req = new HttpRequestMessage(HttpMethod.Post, $"{_url}/models/{model}/inferences");
+            req.Content = new StringContent(requestPayload, Encoding.UTF8, "application/json");
+            req.Headers.Add("Authorization", $"Basic {_config.ScenarioApiKey}");
+
+            var response = await _client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+            var responseJson = await response.Content.ReadAsStringAsync();
+            var completionResponse = JsonConvert.DeserializeObject<InferenceResponse>(responseJson);
+            
+            return completionResponse;
+        }
+
+        public async Task<InferenceResponse> GetInference(string model, string inferenceId)
+        {
+            var req = new HttpRequestMessage(HttpMethod.Get, $"{_url}/models/{model}/inferences/{inferenceId}");
+            req.Headers.Add("Authorization", $"Basic {_config.ScenarioApiKey}");
+            
+            var response = await _client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+            var responseJson = await response.Content.ReadAsStringAsync();
+            var completionResponse = JsonConvert.DeserializeObject<InferenceResponse>(responseJson);
+            return completionResponse;
+        }
+
+        public async Task<InferenceResponse> PollInferenceToCompletion(string model, string inferenceId)
+        {
+            int pollCount = 0;
+            bool completed = false;
+            InferenceResponse updatedInference = null;
+            while (!completed)
+            {
+                // Wait 1 second before polling again
+                await Task.Delay(1000);
+
+                updatedInference = await GetInference(model, inferenceId);
+                completed = updatedInference.inference.IsCompleted;
+                pollCount += 1;
+
+                if (pollCount >= 300 && !completed)
+                {
+                    throw new Exception("Polling timed out after 10 attempts.");
+                }
+            }
+
+            return updatedInference;
+        }
     }
 
     public class CreateInferenceRequest
@@ -119,3 +120,4 @@ public class Scenario
         public string url;
     }
 }
+

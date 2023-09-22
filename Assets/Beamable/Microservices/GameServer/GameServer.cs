@@ -1,24 +1,24 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Xml;
-using Anthropic;
+using Beamable.Common;
 using Beamable.Common.Scheduler;
-using Beamable.Microservices.ChatRpg.Storage;
 using Beamable.Server;
 using Beamable.StorageObjects.GameDatabase;
+using Anthropic;
 using BlockadeLabs;
 using OpenAI;
+using Scenario;
 using Unity.Plastic.Newtonsoft.Json;
-using UnityEngine;
 
 namespace Beamable.Microservices
 {
 	[Microservice("GameServer")]
 	public class GameServer : Microservice
 	{
+		private bool _enableVectorSearch = true;
+		
 		[ConfigureServices]
 		public static void Configure(IServiceBuilder builder)
 		{
@@ -26,15 +26,22 @@ namespace Beamable.Microservices
 			builder.Builder.AddSingleton(p => new HttpClient());
 			builder.Builder.AddSingleton<Config>();
 			builder.Builder.AddSingleton<PromptService>();
-			builder.Builder.AddSingleton<Scenario>();
+			builder.Builder.AddSingleton<ScenarioApi>();
 			builder.Builder.AddSingleton<SkyboxApi>();
-			builder.Builder.AddSingleton<Claude>();
+			builder.Builder.AddSingleton<ClaudeApi>();
 			builder.Builder.AddSingleton<OpenAI_API>();
+			builder.Builder.AddSingleton<PortraitService>();
+			builder.Builder.AddSingleton<SkyboxService>();
+			builder.Builder.AddSingleton<CampaignService>();
+			builder.Builder.AddSingleton<CharacterService>();
 
 			// Collections
-			builder.Builder.AddSingleton<BlockadeSkyboxesCollectionV2>();
+			builder.Builder.AddSingleton<CampaignCharacterCollection>();
+			builder.Builder.AddSingleton<CampaignEventsCollection>();
+			builder.Builder.AddSingleton<BlockadeSkyboxesCollection>();
+			builder.Builder.AddSingleton<ScenarioPortraitsCollection>();
 			
-			// Only if using custom atlas database
+			// Only necessary if using custom atlas database
 			builder.Builder.ReplaceSingleton<IStorageObjectConnectionProvider, AtlasStorageConnectionProvider>();
 		}
 		
@@ -45,235 +52,63 @@ namespace Beamable.Microservices
 			await config.Init();
 			
 			// Create Indexes
-			await init.GetService<BlockadeSkyboxesCollectionV2>().EnsureIndexes();
+			await init.GetService<CampaignCharacterCollection>().EnsureIndexes();
+			await init.GetService<CampaignEventsCollection>().EnsureIndexes();
+			await init.GetService<BlockadeSkyboxesCollection>().EnsureIndexes();
+			await init.GetService<ScenarioPortraitsCollection>().EnsureIndexes();
 		}
-
-		private async Task<CampaignCharacter> GetCharacter(string campaignName, long playerId)
-		{
-            var db = await Storage.GameDatabaseDatabase();
-            var characters = await CampaignCharacterCollection.GetCharacters(db, campaignName, Context.UserId.ToString());
-            if (!characters.Any())
-            {
-                throw new MicroserviceException(404, "CharacterNotFound",
-                    "A character has not been created yet for this campaign.");
-            }
-
-            return characters.First();
-        }
-
-		private CampaignEvent ParseCampaignEventFromXML(string campaignName, string xml)
-		{
-            XmlDocument xmlDoc = new XmlDocument(); // Create an XML document object
-            xmlDoc.LoadXml(xml);
-            var parsedRoomName = xmlDoc.GetElementsByTagName("ROOM_NAME")[0].InnerText;
-            var parsedStory = xmlDoc.GetElementsByTagName("STORY")[0].InnerText;
-            var parsedDescription = xmlDoc.GetElementsByTagName("DESCRIPTION")[0].InnerText;
-            var parsedMusic = xmlDoc.GetElementsByTagName("MUSIC")[0].InnerText;
-
-			string[] parsedItems = Array.Empty<string>();
-			var xmlItems = xmlDoc.GetElementsByTagName("ITEMS");
-			if(xmlItems.Count > 0)
-			{
-				parsedItems = xmlItems[0].InnerText.Trim().Replace(", ", ",").Split(",");
-            }
-
-            string[] parsedCharacters = Array.Empty<string>();
-            var xmlCharacters = xmlDoc.GetElementsByTagName("CHARACTERS");
-            if (xmlItems.Count > 0)
-            {
-                parsedCharacters = xmlCharacters[0].InnerText.Trim().Replace(", ", ",").Split(",");
-            }
-
-			string parsedDM = null;
-			var xmlDM = xmlDoc.GetElementsByTagName("DM");
-			if (xmlDM.Count > 0)
-			{
-				parsedDM = xmlDM[0].InnerText;
-			}
-
-			return new CampaignEvent
-            {
-                CampaignName = campaignName,
-                RoomName = parsedRoomName,
-                Characters = parsedCharacters,
-                Items = parsedItems,
-                Story = parsedStory,
-                Description = parsedDescription,
-                Music = parsedMusic,
-				DM = parsedDM
-            };
-        }
 
 		[ClientCallable("character/new")]
 		public async Task<CharacterView> NewCharacter(string card1, string card2, string card3)
 		{
-			var db = await Storage.GameDatabaseDatabase();
-			var defaultCampaignName = "DefaultCampaign";
-			
-			//TODO: Fetch a skybox based on the starting location of the campaign
-			//Either generate one, or do a vector search
-			var defaultSkyboxUrl =
-				"https://blockade-platform-production.s3.amazonaws.com/images/imagine/high_quality_detailed_digital_painting_cd_vr_computer_render_fantasy__6607fe49fc7369ec__5716463_.jpg?ver=1";
-			
-			// Feed Character Creation Prompt into Claude to obtain a character sheet
-			var promptService = Provider.GetService<PromptService>();
-			var characterPrompt = promptService.GetClaudeCharacterPrompt(card1, card2, card3);
-			var claude = Provider.GetService<Claude>();
-			var claudeResponse = await claude.Send(new ClaudeCompletionRequest
-			{
-				Prompt = $"\n\nHuman: {characterPrompt}\n\nAssistant:",
-				Model = ClaudeModels.ClaudeInstantLatestV1,
-				MaxTokensToSample = 100000
-			});
-
-			CampaignCharacter newCharacter;
-			try
-			{
-				XmlDocument xmlDoc = new XmlDocument(); // Create an XML document object
-				xmlDoc.LoadXml($"<root>{claudeResponse.Completion}</root>");
-				int.TryParse(xmlDoc.GetElementsByTagName("hp")[0].InnerText, out var hp);
-				int.TryParse(xmlDoc.GetElementsByTagName("strength")[0].InnerText, out var strength);
-				int.TryParse(xmlDoc.GetElementsByTagName("dexterity")[0].InnerText, out var dexterity);
-				int.TryParse(xmlDoc.GetElementsByTagName("intelligence")[0].InnerText, out var intelligence);
-				int.TryParse(xmlDoc.GetElementsByTagName("wisdom")[0].InnerText, out var wisdom);
-				int.TryParse(xmlDoc.GetElementsByTagName("charisma")[0].InnerText, out var charisma);
-				int.TryParse(xmlDoc.GetElementsByTagName("constitution")[0].InnerText, out var constitution);
-
-				newCharacter = new CampaignCharacter
-				{
-					Name = xmlDoc.GetElementsByTagName("name")[0].InnerText,
-					Gender = xmlDoc.GetElementsByTagName("gender")[0].InnerText,
-					Race = xmlDoc.GetElementsByTagName("race")[0].InnerText,
-					Class = xmlDoc.GetElementsByTagName("class")[0].InnerText,
-					Description = xmlDoc.GetElementsByTagName("description")[0].InnerText,
-					Background = xmlDoc.GetElementsByTagName("background")[0].InnerText,
-					Strength = strength,
-					Dexterity = dexterity,
-					Constitution = constitution,
-					Intelligence = intelligence,
-					Wisdom = wisdom,
-					Charisma = charisma,
-					Health = hp,
-					Mana = hp,
-					Level = 1,
-					NemesisName = xmlDoc.GetElementsByTagName("nemesis")[0].InnerText,
-					NemesisDescription = xmlDoc.GetElementsByTagName("nemesis_description")[0].InnerText
-				};
-			}
-			catch (Exception ex)
-			{
-				Debug.LogError(ex);
-				throw new MicroserviceException(500, "UnableToGenerateCharacter", "Failed to parse LLM output during character creation.");
-			}
+			var characterService = Provider.GetService<CharacterService>();
+			CampaignCharacter newCharacter = await characterService.GenerateCharacterSheet(card1, card2, card3);
 
 			var characterJson = JsonConvert.SerializeObject(newCharacter.ToCharacterView());
 			await Services.Notifications.NotifyPlayer(Context.UserId, "character.preview", characterJson);
 
-			//TODO: Perform a Vector Search to see if we can find a good portrait match
-			// Need to implement OpenAI embeddings
-			// Generate Scenario Portrait
-			var scenario = Provider.GetService<Scenario>();
-			var scenarioModel = "EnoXc8q4QlqAfCfoObmW3Q"; // Public Scenario Generator
-			var scenarioPrompt = $"Portrait,D&D,{newCharacter.Gender},{newCharacter.Class},{newCharacter.Race},{newCharacter.Description.Replace(",", " ")}";
-			var scenarioRsp = await scenario.CreateInference(scenarioModel, scenarioPrompt);
-			var completedInference = await scenario.PollInferenceToCompletion(scenarioRsp.inference.modelId, scenarioRsp.inference.id);
-			
-			// Generate Embeddings
-			var openAI = Provider.GetService<OpenAI_API>();
-			var scenarioEmbeddings = await openAI.GetEmbeddings(completedInference.inference.displayPrompt);
-			var scenarioAsset = new ScenarioAsset
-			{
-				Prompt = scenarioPrompt,
-				Model = completedInference.inference.modelId,
-				FileUrl = completedInference.inference.images.Select(i => i.url).FirstOrDefault(),
-				Content = scenarioPrompt,
-				Embedding = scenarioEmbeddings
-			};
-			var insertedScenario = await ScenarioAssetsCollection.Insert(db, scenarioAsset);
-			if (!insertedScenario)
-			{
-				throw new MicroserviceException(500, "UnableToSavePortrait",
-					"Failed to save character portrait inference data to database.");
-			}
-			
+			// Generate or Vector Search for a portrait
+			var portraitService = Provider.GetService<PortraitService>();
+			var portraitPrompt = $"Portrait,D&D,{newCharacter.Gender},{newCharacter.Class},{newCharacter.Race},{newCharacter.Description.Replace(",", " ")}";
+			var portraitUrl = await portraitService.GetPortraitUrl(portraitPrompt, _enableVectorSearch);
+
+			//TODO: Fetch a skybox based on the starting location of the campaign
+			//Either generate one, or do a vector search
+			var defaultSkyboxUrl =
+				"https://blockade-platform-production.s3.amazonaws.com/images/imagine/Fantasy_equirectangular-jpg_The_tavern_interior_is_1334286254_8825770.jpg?ver=1";
+
 			// Further Enrich Character Data
-			newCharacter.CampaignName = defaultCampaignName;
+			newCharacter.CampaignName = "DefaultCampaign";
 			newCharacter.PlayerId = Context.UserId.ToString();
 			newCharacter.SkyboxUrl = defaultSkyboxUrl;
-			newCharacter.PortraitUrl = completedInference.inference.images.Select(i => i.url).FirstOrDefault();
-			
-			var inserted = await CampaignCharacterCollection.Insert(db, newCharacter);
-			if (!inserted)
-			{
-				throw new MicroserviceException(500, "UnableToSaveCharacter",
-					"Failed to save the new character to the database.");
-			}
+			newCharacter.PortraitUrl = portraitUrl;
 
+			await characterService.SaveCharacter(newCharacter);
 			await Services.Notifications.NotifyPlayer(Context.UserId, "character.created", "");
+			
 			return newCharacter.ToCharacterView();
 		}
 
 		[ClientCallable("character/get")]
 		public async Task<CharacterView> GetCharacter()
 		{
-			var db = await Storage.GameDatabaseDatabase();
+			var characterService = Provider.GetService<CharacterService>();
 			var defaultCampaignName = "DefaultCampaign";
-			
-			var characters = await CampaignCharacterCollection.GetCharacters(db, defaultCampaignName, Context.UserId.ToString());
-			if (!characters.Any())
-			{
-				throw new MicroserviceException(404, "CharacterNotFound",
-					"A character has not been created yet for this campaign.");
-			}
 
-			return characters.First().ToCharacterView();
+			var character = await characterService.GetCharacter(defaultCampaignName, Context.UserId);
+			return character.ToCharacterView();
 		}
 
 		[ClientCallable("adventure/ready")]
 		public async Task<WorldState> Ready()
 		{
-            var claude = Provider.GetService<Claude>();
-            var promptService = Provider.GetService<PromptService>();
+			var characterService = Provider.GetService<CharacterService>();
+			var campaignService = Provider.GetService<CampaignService>();
 
-            var db = await Storage.GameDatabaseDatabase();
             var campaignName = "DefaultCampaign";
-            var character = await GetCharacter(campaignName, Context.UserId);
-			var campaignEvents = await CampaignEventsCollection.GetAscendingCampaignEvents(db, campaignName);
-
-			var newCampaign = campaignEvents.Count == 0;
-            var prompt = promptService.AdventurePromptV2(character, campaignEvents);
-            if (newCampaign)
-			{
-                // This is a new campaign, inject a starting point
-                prompt += "\n\nBriefly introduce the campaign to the player in narrative form.";
-			}
-			else
-			{
-                // Summarize the events of the campaign so far
-                prompt += "\n\nBriefly summarize the campaign so far, adopting a tone appropriate for a returning player that may have forgotten some details.";
-            }
-
-            var response = await claude.Send(new ClaudeCompletionRequest
-            {
-                Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
-                Model = ClaudeModels.ClaudeInstantLatestV1,
-                MaxTokensToSample = 100000
-            });
-
-			var campaignEvent = ParseCampaignEventFromXML(campaignName, $"<root>{response.Completion}</root>");
-			if(newCampaign)
-			{
-				campaignEvent.SkyboxUrl = "https://blockade-platform-production.s3.amazonaws.com/images/imagine/high_quality_detailed_digital_painting_cd_vr_computer_render_fantasy__6c9ca4a642910ce8__6154819_.jpg?ver=1";
-				var inserted = await CampaignEventsCollection.Insert(db, campaignEvent);
-				if (!inserted)
-					throw new MicroserviceException(500, "FailedToSaveCampaignEvent", "Failed to persist initial campaign event to the database.");
-			}
-			else
-            {
-				campaignEvent.SkyboxUrl = campaignEvents.Last().SkyboxUrl;
-            }
-
-            var worldState = campaignEvent.ToWorldState();
+            var character = await characterService.GetCharacter(campaignName, Context.UserId);
+            
+            var worldState = await campaignService.GetWorldState(campaignName, character);
             var worldJson = JsonConvert.SerializeObject(worldState);
 			await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
 
@@ -283,86 +118,28 @@ namespace Beamable.Microservices
         [ClientCallable("adventure/play")]
         public async Task<WorldState> Play(AdventurePlayRequest request)
         {
-            var claude = Provider.GetService<Claude>();
-            var promptService = Provider.GetService<PromptService>();
-
-            var db = await Storage.GameDatabaseDatabase();
+	        var characterService = Provider.GetService<CharacterService>();
+	        var campaignService = Provider.GetService<CampaignService>();
+ 
             var campaignName = "DefaultCampaign";
-			var character = await GetCharacter(campaignName, Context.UserId);
-			var campaignEvents = await CampaignEventsCollection.GetAscendingCampaignEvents(db, campaignName);
-
-			var prompt = promptService.AdventurePromptV2(character, campaignEvents);
-			prompt += $"\n\n[{character.Name}]: {request.playerAction}";
-            var response = await claude.Send(new ClaudeCompletionRequest
-            {
-                Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
-                Model = ClaudeModels.ClaudeInstantLatestV1,
-                MaxTokensToSample = 100000
-            });
-
-			var xml = $"<root>{response.Completion}</root>";
-			var campaignEvent = ParseCampaignEventFromXML(campaignName, xml);
-			var inserted = await CampaignEventsCollection.Insert(db, campaignEvent);
-            if (!inserted)
-                throw new MicroserviceException(500, "FailedToSaveCampaignEvent", "Failed to persist campaign event to the database.");
-
+			var character = await characterService.GetCharacter(campaignName, Context.UserId);
+			var campaignEvent = await campaignService.GenerateCampaignEvent(campaignName, character, request.playerAction);
+            await campaignService.SaveCampaignEvent(campaignEvent);
+            
             var worldState = campaignEvent.ToWorldState();
             var worldJson = JsonConvert.SerializeObject(worldState);
             await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
 
-			//Update Skybox
-			Debug.Log("Searching Skybox...");
-			var skyboxStyle = SkyboxStyles.FANTASY_LAND;
-			var blockade = Provider.GetService<SkyboxApi>();
-			
-			// Get Embeddings
-			var openAI = Provider.GetService<OpenAI_API>();
-			var skyboxEmbeddingsVector = await openAI.GetEmbeddings(campaignEvent.Description);
-
-			string skyboxUrl;
-			var skyboxSearchResults = await BlockadeSkyboxesCollection.VectorSearch(db, skyboxEmbeddingsVector, 0.96);
-			if (skyboxSearchResults.Count > 0)
-			{
-				Debug.Log("Found Skybox with sufficient score.");
-				skyboxUrl = skyboxSearchResults.OrderByDescending(skybox => skybox.Score).First().FileUrl;
-			}
-			else
-			{
-				Debug.Log("Creating Skybox...");
-				var inferenceRsp = await blockade.CreateSkybox(skyboxStyle, campaignEvent.Description);
-				if (!inferenceRsp.IsCompleted)
-				{
-					Debug.Log("Polling skybox for completion...");
-					var rsp = await blockade.PollSkyboxToCompletion(inferenceRsp.Id.Value);
-					inferenceRsp = rsp.Request;
-				}
-				
-				var insertedSkybox = await BlockadeSkyboxesCollection.Insert(db, new BlockadeSkybox
-				{
-					StyleId = (int)skyboxStyle,
-					StyleName = skyboxStyle.ToString(),
-					Prompt = campaignEvent.Description,
-					FileUrl = inferenceRsp.FileUrl,
-					DepthMapUrl = inferenceRsp.DepthMapUrl,
-					ThumbUrl = inferenceRsp.ThumbUrl,
-					Embedding = skyboxEmbeddingsVector
-				});
-
-				if (!insertedSkybox)
-					throw new MicroserviceException(500, "FailedToSaveSkybox", "Failed to save skybox to the database.");
-
-				skyboxUrl = inferenceRsp.FileUrl;
-			}
-			
+			// Update Skybox
+			var skyboxService = Provider.GetService<SkyboxService>();
+			var skyboxUrl = await skyboxService.GetSkyboxUrl(campaignEvent.Description, _enableVectorSearch);
 			campaignEvent.SkyboxUrl = skyboxUrl;
-			var updated = await CampaignEventsCollection.Replace(db, campaignEvent);
-			if (!updated)
-				throw new MicroserviceException(500, "FailedToUpdateCampaignEvent", "Failed to update campaign event skybox in the database.");
-
+			await campaignService.SaveCampaignEvent(campaignEvent);
+			
 			worldState = campaignEvent.ToWorldState();
 			worldJson = JsonConvert.SerializeObject(worldState);
 			await Services.Notifications.NotifyPlayer(Context.UserId, "world.update", worldJson);
-
+			
 			return worldState;
         }
 		
@@ -370,7 +147,7 @@ namespace Beamable.Microservices
 		public async Task<string> TestClaude(string prompt)
 		{
 			// This code executes on the server.
-			var claude = Provider.GetService<Claude>();
+			var claude = Provider.GetService<ClaudeApi>();
 			var response = await claude.Send(new ClaudeCompletionRequest
 			{
 				Prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
@@ -386,102 +163,59 @@ namespace Beamable.Microservices
 		{
 			// This code executes on the server.
 			var model = "RNHPqrHFQYu-oqZGb5VBtg";
-			var scenario = Provider.GetService<Scenario>();
+			var scenario = Provider.GetService<ScenarioApi>();
 
 			var inferenceRsp = await scenario.CreateInference(model, "dungeons & dragons, level 1, wizard");
 			if (!inferenceRsp.inference.IsCompleted)
 			{
-				Debug.Log("Polling for inference...");
+				BeamableLogger.Log("Polling for inference...");
 				inferenceRsp =
 					await scenario.PollInferenceToCompletion(inferenceRsp.inference.modelId, inferenceRsp.inference.id);
 			}
 
 			var url = inferenceRsp.inference.images.FirstOrDefault().url;
-			Debug.Log(url);
+			BeamableLogger.Log(url);
 
 			return url;
 		}
 
 		[ClientCallable("blockade")]
-		public async Task<string> TestBlockade(string prompt, float[] vector)
+		public async Task<string> TestBlockade(string prompt)
 		{
-			var blockadeCollection = Provider.GetService<BlockadeSkyboxesCollectionV2>();
-			var db = await Storage.GameDatabaseDatabase();
-			List<BlockadeSkybox> result;
-			try
-			{
-				result = await blockadeCollection.VectorSearch(vector, 50);
-			}
-			catch (Exception ex)
-			{
-				Debug.LogException(ex);
-				throw ex;
-			}
-
 			var skyboxStyle = SkyboxStyles.FANTASY_LAND;
 			var blockade = Provider.GetService<SkyboxApi>();
 			
-			Debug.Log("Creating Skybox...");
+			BeamableLogger.Log("Creating Skybox...");
 			var inferenceRsp = await blockade.CreateSkybox(skyboxStyle, prompt);
 			if (!inferenceRsp.IsCompleted)
 			{
-				Debug.Log("Polling skybox for completion...");
+				BeamableLogger.Log("Polling skybox for completion...");
 				var rsp = await blockade.PollSkyboxToCompletion(inferenceRsp.Id.Value);
 				inferenceRsp = rsp.Request;
 			}
 			
-			Debug.Log($"Skybox creation complete: {inferenceRsp.FileUrl}");
-			await Services.Notifications.NotifyPlayer(Context.UserId, "blockade.reply", inferenceRsp.FileUrl);
-
-			// Get Embeddings
-			var openAI = Provider.GetService<OpenAI_API>();
-			var embeddingsVector = await openAI.GetEmbeddings(prompt);
-			
-			var inserted = await BlockadeSkyboxesCollection.Insert(db, new BlockadeSkybox
-			{
-				StyleId = (int)skyboxStyle,
-				StyleName = skyboxStyle.ToString(),
-				Prompt = prompt,
-				FileUrl = inferenceRsp.FileUrl,
-				DepthMapUrl = inferenceRsp.DepthMapUrl,
-				ThumbUrl = inferenceRsp.ThumbUrl,
-				Embedding = embeddingsVector
-			});
-
-			if (!inserted)
-			{
-				Debug.LogError("Failed to insert blockade document into database.");
-			}
-			
+			BeamableLogger.Log($"Skybox creation complete: {inferenceRsp.FileUrl}");
 			return inferenceRsp.FileUrl;
 		}
 
 		[ClientCallable]
 		public async Task<Job> TestScheduler()
 		{
-			try
-			{
-				var job = await Services.Scheduler.Schedule()
-					.Microservice<GameServer>(useLocal: true)
-					.Run(t => t.DelayedTask)
-					.After(TimeSpan.FromSeconds(10))
-					.Save("test");
+			var job = await Services.Scheduler.Schedule()
+				.Microservice<GameServer>(useLocal: true)
+				.Run(t => t.DelayedTask)
+				.After(TimeSpan.FromSeconds(10))
+				.Save("test");
 				
-				return job;
-			}
-			catch (Exception ex)
-			{
-				Debug.LogError(ex);
-				throw ex;
-			}
+			return job;
 		}
 
 		[Callable]
 		public async Task DelayedTask()
 		{
-			Debug.Log("Delayed Task Executing...");
+			BeamableLogger.Log("Delayed Task Executing...");
 			await Task.Delay(30000);
-			Debug.Log("Delayed Task Completed.");
+			BeamableLogger.Log("Delayed Task Completed.");
 		}
 	}
 }

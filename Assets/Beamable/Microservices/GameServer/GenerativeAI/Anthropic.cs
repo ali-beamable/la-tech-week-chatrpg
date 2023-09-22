@@ -1,13 +1,11 @@
 ﻿using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Beamable.Server;
-using Beamable.Server.Api.Notifications;
 using Unity.Plastic.Newtonsoft.Json;
 
 namespace Anthropic
 {
-	public class Claude
+	public class ClaudeApi
 	{
         private readonly string _url = "https://api.anthropic.com/v1/complete";
 
@@ -19,7 +17,7 @@ namespace Anthropic
             NullValueHandling = NullValueHandling.Ignore
         };
 
-        public Claude(HttpClient httpClient, Config config)
+        public ClaudeApi(HttpClient httpClient, Config config)
         {
             _httpClient = httpClient;
             _config = config;

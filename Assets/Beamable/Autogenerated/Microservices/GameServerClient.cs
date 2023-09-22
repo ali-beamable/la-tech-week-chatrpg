@@ -107,13 +107,11 @@ namespace Beamable.Server.Clients
         /// Call the TestBlockade method on the GameServer microservice
         /// <see cref="Beamable.Microservices.GameServer.TestBlockade"/>
         /// </summary>
-        public Beamable.Common.Promise<string> TestBlockade(string prompt, float[] vector)
+        public Beamable.Common.Promise<string> TestBlockade(string prompt)
         {
             object raw_prompt = prompt;
-            object raw_vector = vector;
             System.Collections.Generic.Dictionary<string, object> serializedFields = new System.Collections.Generic.Dictionary<string, object>();
             serializedFields.Add("prompt", raw_prompt);
-            serializedFields.Add("vector", raw_vector);
             return this.Request<string>("GameServer", "blockade", serializedFields);
         }
         
@@ -148,11 +146,6 @@ namespace Beamable.Server.Clients
         
         [System.SerializableAttribute()]
         internal sealed class ParameterAdventurePlayRequest : MicroserviceClientDataWrapper<AdventurePlayRequest>
-        {
-        }
-        
-        [System.SerializableAttribute()]
-        internal sealed class ParameterSystem_Array_System_Single : MicroserviceClientDataWrapper<float[]>
         {
         }
     }
